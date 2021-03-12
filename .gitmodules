@@ -1,0 +1,9 @@
+[submodule "external/VulkanMemoryAllocator-Hpp"]
+	path = external/VulkanMemoryAllocator-Hpp
+	url = https://github.com/malte-v/VulkanMemoryAllocator-Hpp.git
+[submodule "external/Vookoo"]
+	path = external/Vookoo
+	url = https://github.com/andy-thomason/Vookoo.git
+[submodule "external/glfw"]
+	path = external/glfw
+	url = https://github.com/glfw/glfw.git
