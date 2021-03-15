@@ -9,17 +9,20 @@ int main()
     {
         Engine engine;
         engine.loop();
+        engine.destroy();
     }
     catch( const vk::SystemError& err )
     {
         std::cerr << err.what() << '\n';
+        return EXIT_FAILURE;
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
+        return EXIT_FAILURE;
     }
 
     std::cout << "Running Successfully\n";
 
-    return 0;
+    return EXIT_SUCCESS;
 }

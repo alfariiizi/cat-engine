@@ -152,6 +152,12 @@ std::vector<const char*> VulkanBase::instanceExtensions()
     return extensions;
 }
 
+const vk::PhysicalDevice& VulkanBase::getPhysicalDevice() 
+{
+    assert( _hasBeenCreated_ );
+    return _physicalDevice_;
+}
+
 const vk::SurfaceKHR& VulkanBase::getSurface() 
 {
     assert( _hasBeenCreated_ );

@@ -31,6 +31,7 @@ private:
 
     /* Getter */
 public:
+    const vk::PhysicalDevice&       getPhysicalDevice();
     const vk::SurfaceKHR&           getSurface();
     const vk::Device&               getDevice();
     const vma::Allocator&           getAllocator();

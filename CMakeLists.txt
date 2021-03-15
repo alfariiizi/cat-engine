@@ -19,6 +19,7 @@ add_executable( ${PROJECT_NAME}
     src/Window.cpp
     src/vk_utils.cpp
     src/vk_init.cpp
+    src/Material.cpp
 )
 
 target_link_libraries( ${PROJECT_NAME}
@@ -27,7 +28,11 @@ target_link_libraries( ${PROJECT_NAME}
         glfw
 )
 
+add_subdirectory( ${CMAKE_SOURCE_DIR}/external )
+
 target_include_directories( ${PROJECT_NAME}
     PUBLIC
         ${CMAKE_SOURCE_DIR}/include
 )
+
+# add_subdirectory( ${CMAKE_SOURCE_DIR}/shaders )
