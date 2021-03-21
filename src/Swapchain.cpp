@@ -2,11 +2,17 @@
 
 #include "QueueFamilyIndices.hpp"
 
+
+Swapchain::~Swapchain() 
+{
+    _delQueue_.flush();
+}
+
 void Swapchain::init( vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR& surface ,const vk::Device& device, const vk::Extent2D& extent ) 
 {
     _physicalDevice_ = physicalDevice;
-    _pSurface_ = &surface;
-    _pDevice_ = &device;
+    _surface_ = surface;
+    _device_ = device;
     _extent_ = extent;
 
     _hasBeenInitialized_ = true;
@@ -16,9 +22,9 @@ void Swapchain::create()
 {
     assert( _hasBeenInitialized_ );
 
-    auto surfaceCapability = _physicalDevice_.getSurfaceCapabilitiesKHR( *_pSurface_ );
-    auto surfaceFormats = _physicalDevice_.getSurfaceFormatsKHR( *_pSurface_ );
-    auto surfacePresentModes = _physicalDevice_.getSurfacePresentModesKHR( *_pSurface_ );
+    auto surfaceCapability = _physicalDevice_.getSurfaceCapabilitiesKHR( _surface_ );
+    auto surfaceFormats = _physicalDevice_.getSurfaceFormatsKHR( _surface_ );
+    auto surfacePresentModes = _physicalDevice_.getSurfacePresentModesKHR( _surface_ );
 
     auto surfaceExtent = chooseSurfaceExtent( surfaceCapability, _extent_ );
     auto surfaceFormat = chooseSurfaceFormat( surfaceFormats );
@@ -31,7 +37,7 @@ void Swapchain::create()
 
     vk::SwapchainCreateInfoKHR swapchainInfo {
         {},
-        *_pSurface_,
+        _surface_,
         imageCount,
         surfaceFormat.format,       // surfaceFormat.format == image format
         surfaceFormat.colorSpace,   // surfaceFormat.colorspace == image colorspace
@@ -47,7 +53,7 @@ void Swapchain::create()
         nullptr                                 // old swapchain
     };
 
-    auto graphicsAndPresentQueueFamily = QueueFamilyIndices::FindQueueFamilyIndices( _physicalDevice_, *_pSurface_ );
+    auto graphicsAndPresentQueueFamily = QueueFamilyIndices::FindQueueFamilyIndices( _physicalDevice_, _surface_ );
     _graphicsQueueFamilyIndices_ = graphicsAndPresentQueueFamily.graphicsFamily.value();
     _presentQueueFamilyIndices_ = graphicsAndPresentQueueFamily.presentFamily.value();
     if( !graphicsAndPresentQueueFamily.exslusive() )
@@ -61,7 +67,7 @@ void Swapchain::create()
         swapchainInfo.setQueueFamilyIndices( nullptr );
     }
 
-    _hSwapchain_ = _pDevice_->createSwapchainKHR( swapchainInfo );
+    _uhSwapchain_ = _device_.createSwapchainKHRUnique( swapchainInfo );
     _format_ = surfaceFormat.format;
 
     retrieveImagesAndCreateImageViews();
@@ -73,18 +79,19 @@ void Swapchain::destroy()
 {
     assert( _hasBeenCreated_ );
 
-    for( auto imageView : _imageViews_ )
-        _pDevice_->destroyImageView( imageView );
+    // for( auto imageView : _imageViews_ )
+    //     _device_.destroyImageView( imageView );
+    // _device_.destroySwapchainKHR( _uhSwapchain_ );
 
-    _pDevice_->destroySwapchainKHR( _hSwapchain_ );
+    _delQueue_.flush();
 
     _hasBeenCreated_ = false;
 }
 
 void Swapchain::retrieveImagesAndCreateImageViews() 
 {
-    _images_ = _pDevice_->getSwapchainImagesKHR( _hSwapchain_ );
-    _imageViews_.reserve( _images_.size() );
+    _images_ = _device_.getSwapchainImagesKHR( _uhSwapchain_.get() );
+    _uImageViews_.reserve( _images_.size() );
 
     for( auto& image : _images_ )
     {
@@ -107,14 +114,14 @@ void Swapchain::retrieveImagesAndCreateImageViews()
                 1       // layer count
             }
         };
-        _imageViews_.emplace_back( _pDevice_->createImageView( imageViewInfo ) );
+        _uImageViews_.emplace_back( _device_.createImageViewUnique( imageViewInfo ) );
     }
 }
 
 const vk::SwapchainKHR& Swapchain::getSwapchain() 
 {
     assert( _hasBeenCreated_ );
-    return _hSwapchain_;
+    return _uhSwapchain_.get();
 }
 
 const vk::Format& Swapchain::getFormat() 
@@ -135,10 +142,15 @@ const std::vector<vk::Image>& Swapchain::getImages()
     return _images_;
 }
 
-const std::vector<vk::ImageView>& Swapchain::getImageViews() 
+std::vector<vk::ImageView> Swapchain::getImageViews() 
 {
     assert( _hasBeenCreated_ );
-    return _imageViews_;
+    std::vector<vk::ImageView> iv;
+    iv.reserve( _uImageViews_.size() );
+    for( auto& imageView : _uImageViews_ )
+        iv.emplace_back( imageView.get() );
+
+    return iv;
 }
 
 uint32_t Swapchain::getGraphicsQueueFamilyIndices() 

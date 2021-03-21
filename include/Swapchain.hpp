@@ -2,11 +2,15 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "DeletionQueue.hpp"
+
 class Swapchain
 {
     /* Main member function */
 public:
-    void init( vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR& surface ,const vk::Device& device, const vk::Extent2D& extent );
+    Swapchain() {};
+    ~Swapchain();
+    void init( vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR& surface ,const vk::Device& device, const vk::Extent2D& extent, DeletionQueue& delQueue );
     void create();
     void destroy();
 
@@ -20,7 +24,7 @@ public:
     const vk::Format&                   getFormat();
     const vk::Extent2D&                 getExtent();
     const std::vector<vk::Image>&       getImages();
-    const std::vector<vk::ImageView>&   getImageViews();
+    std::vector<vk::ImageView>          getImageViews();
     uint32_t                            getGraphicsQueueFamilyIndices();
     uint32_t                            getPresentQueueFamilyIndices();
 
@@ -32,13 +36,13 @@ private:
 
     /* Main member variables */
 private:
-    vk::SwapchainKHR            _hSwapchain_;
-    vk::Format                  _format_;
-    std::vector<vk::Image>      _images_;
-    std::vector<vk::ImageView>  _imageViews_;
-    vk::Extent2D                _extent_;
-    uint32_t                    _graphicsQueueFamilyIndices_;
-    uint32_t                    _presentQueueFamilyIndices_;
+    vk::UniqueSwapchainKHR              _uhSwapchain_;
+    vk::Format                          _format_;
+    std::vector<vk::Image>              _images_;
+    std::vector<vk::UniqueImageView>    _uImageViews_;
+    vk::Extent2D                        _extent_;
+    uint32_t                            _graphicsQueueFamilyIndices_;
+    uint32_t                            _presentQueueFamilyIndices_;
 
     /* Checker */
 private:
@@ -47,7 +51,8 @@ private:
 
     /* Depend */
 private:
-    const vk::Device*                   _pDevice_;
-    vk::PhysicalDevice                  _physicalDevice_;
-    const vk::SurfaceKHR*               _pSurface_;
+    vk::Device                 _device_;
+    vk::PhysicalDevice         _physicalDevice_;
+    vk::SurfaceKHR             _surface_;
+    DeletionQueue              _delQueue_;
 };
