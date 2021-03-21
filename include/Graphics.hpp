@@ -21,7 +21,7 @@ private:
 public:
     Graphics(){};
     ~Graphics();
-    void init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const Renderpass& renderpass, uint32_t width, uint32_t height, vk::Queue graphicsQueue, vk::Queue presentQueue );
+    void init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const Renderpass& renderpass, uint32_t width, uint32_t height, uint32_t queueIndex, vk::Queue graphicsQueue, vk::Queue presentQueue );
     void create();
     void destroy();
     void draw( vk::CommandBuffer cmd, uint32_t imageIndex );

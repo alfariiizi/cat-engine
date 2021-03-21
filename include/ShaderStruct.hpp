@@ -67,3 +67,9 @@ struct Vertex
         return description;
     }
 };
+
+struct Texture_Vertex
+{
+    glm::vec3 position;
+    glm::vec2 uv;
+};

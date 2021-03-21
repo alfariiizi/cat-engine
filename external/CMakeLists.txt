@@ -22,4 +22,5 @@ target_include_directories( ${CMAKE_PROJECT_NAME}
         # Vookoo/external/stb
         Vookoo/include/
         VulkanMemoryAllocator-Hpp/
+        stb/include/
 )

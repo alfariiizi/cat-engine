@@ -7,3 +7,6 @@
 [submodule "external/VulkanMemoryAllocator-Hpp"]
 	path = external/VulkanMemoryAllocator-Hpp
 	url = https://github.com/alfariiizi/VulkanMemoryAllocator-Hpp.git
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/alfariiizi/stb.git

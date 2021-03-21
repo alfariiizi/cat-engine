@@ -1,4 +1,5 @@
 #include "Engine.hpp"
+#include "vk_utils.hpp"
 
 
 Engine::Engine() 
@@ -34,7 +35,12 @@ void Engine::init()
         synch._presentSemaphore = _pDevice_->createSemaphore( {} );
     }
 
-    _graphics_.init( _vulkanbase_.getPhysicalDevice(), *_pDevice_, _vulkanbase_.getRenderpass(), _window_.ScreenWidth, _window_.ScreenHeight, _vulkanbase_.getGraphicsQueue(), _vulkanbase_.getPresentQueue() );
+    _graphics_.init( _vulkanbase_.getPhysicalDevice(), 
+                        *_pDevice_, 
+                        _vulkanbase_.getRenderpass(), 
+                        _window_.ScreenWidth, _window_.ScreenHeight, 
+                        utils::FindQueueFamilyIndices( _vulkanbase_.getPhysicalDevice(), _vulkanbase_.getSurface()).graphicsAndPresentFamilyIndex().front(), 
+                        _vulkanbase_.getGraphicsQueue(), _vulkanbase_.getPresentQueue() );
 
 
     _hasBeenInit_ = true;

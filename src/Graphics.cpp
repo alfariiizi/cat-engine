@@ -6,7 +6,7 @@ Graphics::~Graphics()
     destroy();
 }
 
-void Graphics::init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const Renderpass& renderpass, uint32_t width, uint32_t height, vk::Queue graphicsQueue, vk::Queue presentQueue ) 
+void Graphics::init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const Renderpass& renderpass, uint32_t width, uint32_t height, uint32_t queueIndex, vk::Queue graphicsQueue, vk::Queue presentQueue ) 
 {
     _physicalDevice_ = physicalDevice;
     _pDevice_ = &device;
@@ -16,7 +16,7 @@ void Graphics::init( vk::PhysicalDevice physicalDevice, const vk::Device& device
     _width_ = width;
     _height_ = height;
 
-    material.init( _physicalDevice_, *_pDevice_, _renderpass_.getRenderpass(), _width_, _height_ );
+    material.init( _physicalDevice_, *_pDevice_, _renderpass_.getRenderpass(), queueIndex, _queue_._graphics, _width_, _height_ );
 
     vertBuffer = { *_pDevice_, _physicalDevice_.getMemoryProperties(), vertices };
 
@@ -66,11 +66,12 @@ void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::Rend
     cmd.beginRenderPass( rpBeginInfo, vk::SubpassContents::eInline );
 
     /// RECORDING
-    auto it_material = material.getMaterial( "triangle" );
+    auto it_material = material.getMaterial( "basicTextured" );
     {
 
         cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, it_material->_pipeline );
         cmd.bindVertexBuffers( 0, vertBuffer.buffer(), vk::DeviceSize{0} );
+        cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, it_material->_layout, 0, it_material->_set, nullptr );
         cmd.draw( vertices.size(), 1, 0, 0 );
     }
 
