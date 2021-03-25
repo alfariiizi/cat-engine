@@ -106,7 +106,7 @@ vk::PhysicalDevice init::pickPhysicalDevice( const vk::Instance& instance, const
     return choose;
 }
 
-vk::Device init::createDevice( const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface )
+vk::UniqueDevice init::createDeviceUnique( const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface )
 {
     auto graphicsAndPresentQueueFamily = utils::FindQueueFamilyIndices( physicalDevice, surface );
 
@@ -140,7 +140,7 @@ vk::Device init::createDevice( const vk::PhysicalDevice& physicalDevice, const v
         &deviceFeatures                 // device features
     };
 
-    return physicalDevice.createDevice( deviceInfo );
+    return physicalDevice.createDeviceUnique( deviceInfo );
 }
 
 vk::SwapchainKHR init::createSwapchain( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent )

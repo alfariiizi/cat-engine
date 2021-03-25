@@ -1,8 +1,14 @@
 #include "Command.hpp"
 
+
+Command::~Command() 
+{
+    _delQueue_.flush();
+}
+
 void Command::init( const vk::Device& device, uint32_t graphicsQueueFamilyIndices, uint32_t bufferSize, vk::CommandBufferLevel bufferLevel ) 
 {
-    _pDevice_ = &device;
+    _device_ = device;
     _graphicsQueueFamilyIndices_ = graphicsQueueFamilyIndices;
     _bufferSize_ = bufferSize;
     _bufferLevel_ = bufferLevel;
@@ -21,18 +27,18 @@ void Command::create()
     cmdPoolInfo.setFlags( vk::CommandPoolCreateFlagBits::eResetCommandBuffer );
     cmdPoolInfo.setQueueFamilyIndex( _graphicsQueueFamilyIndices_ );
 
-    _pool_ = _pDevice_->createCommandPool( cmdPoolInfo );
+    _uPool_ = _device_.createCommandPoolUnique( cmdPoolInfo );
 
 
     /**
      * @brief Command Buffers
      */
     vk::CommandBufferAllocateInfo cmdBufferAllocInfo {};
-    cmdBufferAllocInfo.setCommandPool( _pool_ );
+    cmdBufferAllocInfo.setCommandPool( _uPool_.get() );
     cmdBufferAllocInfo.setLevel( _bufferLevel_ );
     cmdBufferAllocInfo.setCommandBufferCount( _bufferSize_ );
 
-    _buffers_ = _pDevice_->allocateCommandBuffers( cmdBufferAllocInfo );
+    _uBuffers_ = _device_.allocateCommandBuffersUnique( cmdBufferAllocInfo );
 
 
     _hasBeenCreated_ = true;
@@ -40,19 +46,25 @@ void Command::create()
 
 void Command::destroy() 
 {
-    assert( _hasBeenCreated_ );
+    // assert( _hasBeenCreated_ );
 
-    _pDevice_->destroyCommandPool( _pool_ );
+    // _device_.destroyCommandPool( _uPool_ );
 }
 
 const vk::CommandPool& Command::getPool() 
 {
     assert( _hasBeenCreated_ );
-    return _pool_;
+    return _uPool_.get();
 }
 
 const std::vector<vk::CommandBuffer>& Command::getBuffers() 
 {
     assert( _hasBeenCreated_ );
-    return _buffers_;
+    std::vector<vk::CommandBuffer> buffers;
+    buffers.reserve( _uBuffers_.size() );
+
+    for( auto& b : _uBuffers_ )
+        buffers.emplace_back( b.get() );
+
+    return buffers;
 }

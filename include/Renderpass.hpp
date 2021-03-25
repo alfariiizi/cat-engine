@@ -1,14 +1,39 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include <memory>
+
+#include "vku/vku.hpp"
+
 #include "Swapchain.hpp"
-#include "Depth.hpp"
+#include "DeletionQueue.hpp"
+
+#include <vma/vk_mem_alloc.hpp>
+
+namespace vk
+{
+//   template <typename Dispatch> class UniqueHandleTraits<RenderPass, Dispatch> { public: using deleter = ObjectDestroy<Device, Dispatch>; };
+//   using UniqueRenderPass = UniqueHandle<RenderPass, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE>;
+    // using SharedRenderpass = std::shared
+}
 
 class Renderpass
 {
 public:
+    struct DepthImage
+    {
+        vk::Image _image;
+        vk::ImageView _imageView;
+    };
+
+public:
+    Renderpass() {};
+    ~Renderpass();
+    // State getAllMembers();
+
+public:
     /* Main member function */
-    void init( const vk::Device& device, const vma::Allocator& allocator, Swapchain& swapchain, bool useDepth );
+    void init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const vma::Allocator& allocator, Swapchain& swapchain, bool useDepth );
     void create();
     void destroy();
 
@@ -19,14 +44,16 @@ private:
     /* Getter */
 public:
     const vk::RenderPass&                   getRenderpass();
-    const Depth&                            getDepth();
-    const std::vector<vk::Framebuffer>&     getFramebuffer();
+    // const Depth&                            getDepth();
+    std::vector<vk::Framebuffer>            getFramebuffer();
 
     /* Main member variables */
 private:
-    vk::RenderPass                  _hRenderpass_;
-    Depth                           _depth_;
-    std::vector<vk::Framebuffer>    _framebuffers_;
+    // vk::UniqueRenderPass                    _uhRenderpass_;
+    // Depth                                   _depth_;
+    vk::RenderPass                          _renderpass_;
+    DepthImage                              _depth_;
+    std::vector<vk::UniqueFramebuffer>      _uFramebuffers_;
 
     /* Checker */
 private:
@@ -36,7 +63,9 @@ private:
 
     /* Depend */
 private:
-    const vk::Device*       _pDevice_;
+    vk::PhysicalDevice      _physicalDevice_;
+    vk::Device              _device_;
     const vma::Allocator*   _pAllocator_;
-    Swapchain*        _pSwapchain_;
+    Swapchain*              _pSwapchain_;
+    DeletionQueue           _delQueue_;
 };

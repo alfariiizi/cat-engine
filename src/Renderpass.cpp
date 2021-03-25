@@ -1,14 +1,37 @@
 #include "Renderpass.hpp"
 
 
-void Renderpass::init( const vk::Device& device, const vma::Allocator& allocator, Swapchain& swapchain, bool useDepth ) 
+Renderpass::~Renderpass() 
 {
-    _pDevice_ = &device;
+    _delQueue_.flush();
+}
+
+// Renderpass::State Renderpass::getAllMembers() 
+// {
+//     assert( _hasBeenInitialized_ && _hasBeenCreated_ );
+
+//     return { getRenderpass(), getFramebuffer() };
+// }
+
+void Renderpass::init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const vma::Allocator& allocator, Swapchain& swapchain, bool useDepth ) 
+{
+    _physicalDevice_ = physicalDevice;
+    _device_ = device;
     _pSwapchain_ = &swapchain;
+
+
     if( useDepth )
     {
-        _depth_.init( device, allocator );
-        _depth_.initDepth( vk::Extent3D{ swapchain.getExtent(), 1 } );
+        // _depth_.init( device, allocator );
+        // _depth_.initDepth( vk::Extent3D{ swapchain.getExtent(), 1 } );
+
+        vk::Extent2D extent = _pSwapchain_->getExtent();
+        auto depth = vku::DepthStencilImage{ _device_, 
+            _physicalDevice_.getMemoryProperties(),
+            extent.width, extent.height,
+            vk::Format::eD32Sfloat };
+        
+        // _depth_ = depth.
     }
     
     _useDepth_ = useDepth;
@@ -20,7 +43,7 @@ void Renderpass::create()
 {
     assert( _hasBeenInitialized_ );
 
-    _depth_.create();
+    // _depth_.create();
 
     /**
      * @brief the renderpass will use this COLOR attachment.
@@ -55,7 +78,7 @@ void Renderpass::create()
      * @brief the renderpass will use this DEPTH attachment.
      */
     vk::AttachmentDescription depthAttachment {};
-    depthAttachment.setFormat( _depth_.getFormat() );
+    depthAttachment.setFormat( _depth_.format() );
     depthAttachment.setSamples( vk::SampleCountFlagBits::e1 );  // we won't use fancy sample for right now
     depthAttachment.setLoadOp( vk::AttachmentLoadOp::eClear );
     depthAttachment.setStoreOp( vk::AttachmentStoreOp::eStore );
@@ -92,7 +115,13 @@ void Renderpass::create()
     renderpassInfo.setAttachments( attachDescs );
     renderpassInfo.setSubpasses( subpass );
 
-    _hRenderpass_ = _pDevice_->createRenderPass( renderpassInfo );
+    _renderpass_ = _device_.createRenderPass( renderpassInfo );
+    _delQueue_.pushFunction( [&]()
+    {
+        _device_.destroyRenderPass( _renderpass_ );
+    });
+
+    _depth_.
 
     /**
      * Sekalian create framebuffer nya
@@ -106,18 +135,18 @@ void Renderpass::destroy()
 {
     assert( _hasBeenCreated_ );
 
-    for( const auto& fb : _framebuffers_ )
-        _pDevice_->destroyFramebuffer( fb );
+    // for( const auto& fb : _uFramebuffers_ )
+    //     _device_.destroyFramebuffer( fb );
     
-    _pDevice_->destroyRenderPass( _hRenderpass_ );
-    _depth_.destroy();
+    // _device_.destroyRenderPass( _renderpass_ );
+    // _depth_.destroy();
 
     _hasBeenCreated_ = false;
 }
 
 void Renderpass::createFramebuffer() 
 {
-    _framebuffers_.reserve( _pSwapchain_->getImages().size() );
+    _uFramebuffers_.reserve( _pSwapchain_->getImages().size() );
 
     for( const auto& view : _pSwapchain_->getImageViews() )
     {
@@ -125,33 +154,40 @@ void Renderpass::createFramebuffer()
         // (in this case, normal image view first, then the depth image view)
         std::vector<vk::ImageView> attachments = { view };
         if( _useDepth_ )
-            attachments.emplace_back( _depth_.getImageView() );
+            attachments.emplace_back( _depth_.imageView() );
 
         vk::FramebufferCreateInfo fbInfo {};
         fbInfo.setAttachments( attachments );
         fbInfo.setWidth( _pSwapchain_->getExtent().width );
         fbInfo.setHeight( _pSwapchain_->getExtent().height );
-        fbInfo.setRenderPass( _hRenderpass_ );
+        fbInfo.setRenderPass( _renderpass_ );
         fbInfo.setLayers( 1 );
 
-        _framebuffers_.emplace_back( _pDevice_->createFramebuffer( fbInfo ) );
+        _uFramebuffers_.emplace_back( _device_.createFramebufferUnique( fbInfo ) );
     }
 }
 
 const vk::RenderPass& Renderpass::getRenderpass() 
 {
     assert( _hasBeenInitialized_ && _hasBeenCreated_ );
-    return _hRenderpass_;
+    return _renderpass_;
 }
 
-const Depth& Renderpass::getDepth() 
-{
-    assert( _hasBeenInitialized_ && _hasBeenCreated_ );
-    return _depth_;
-}
+// const Depth& Renderpass::getDepth() 
+// {
+//     assert( _hasBeenInitialized_ && _hasBeenCreated_ );
+//     return _depth_;
+// }
 
-const std::vector<vk::Framebuffer>& Renderpass::getFramebuffer() 
+std::vector<vk::Framebuffer> Renderpass::getFramebuffer() 
 {
     assert( _hasBeenInitialized_ && _hasBeenCreated_ );
-    return _framebuffers_;
+
+    std::vector<vk::Framebuffer> fbs;
+    fbs.reserve( _uFramebuffers_.size() );
+
+    for( auto& fb : _uFramebuffers_ )
+        fbs.emplace_back( fb.get() );
+
+    return fbs;
 }

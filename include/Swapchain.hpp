@@ -6,11 +6,26 @@
 
 class Swapchain
 {
-    /* Main member function */
+public:
+    struct State
+    {
+        vk::SwapchainKHR                _swapchain;
+        vk::Format                      _format;
+        vk::Extent2D                    _extent;
+        std::vector<vk::Image>          _images;
+        std::vector<vk::ImageView>      _imageViews;
+        uint32_t                        _graphicsQueueFamilyIndices;
+        uint32_t                        _presentQueueFamilyIndices;
+    };
+
 public:
     Swapchain() {};
     ~Swapchain();
-    void init( vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR& surface ,const vk::Device& device, const vk::Extent2D& extent, DeletionQueue& delQueue );
+    State getAllMembers();
+
+    /* Main member function */
+public:
+    void init( vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR& surface ,const vk::Device& device, const vk::Extent2D& extent );
     void create();
     void destroy();
 

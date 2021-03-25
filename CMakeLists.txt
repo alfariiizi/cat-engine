@@ -6,10 +6,10 @@ set( CMAKE_CXX_STANDARD 17 )
 
 add_executable( ${PROJECT_NAME}
     src/Command.cpp
-    src/Depth.cpp
+    # src/Depth.cpp
     src/Engine.cpp
     src/Graphics.cpp
-    src/Image.cpp
+    # src/Image.cpp
     src/main.cpp
     src/Pipeline.cpp
     src/Renderpass.cpp

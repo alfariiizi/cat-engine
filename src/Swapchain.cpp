@@ -8,6 +8,13 @@ Swapchain::~Swapchain()
     _delQueue_.flush();
 }
 
+Swapchain::State Swapchain::getAllMembers() 
+{
+    assert( _hasBeenInitialized_ && _hasBeenCreated_ );
+
+    return { getSwapchain(), getFormat(), getExtent(), getImages(), getImageViews(), getGraphicsQueueFamilyIndices(), getPresentQueueFamilyIndices() };
+}
+
 void Swapchain::init( vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR& surface ,const vk::Device& device, const vk::Extent2D& extent ) 
 {
     _physicalDevice_ = physicalDevice;

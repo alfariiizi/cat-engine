@@ -6,6 +6,16 @@
 
 #include <GLFW/glfw3.h>
 
+
+VulkanBase::~VulkanBase() 
+{
+    _delQueue_.flush();
+    _allocator_.destroy();
+    debugutils::DestroyDebugUtilsMessengerEXT( 
+        static_cast<VkInstance>( _uInstance_.get() ), static_cast<VkDebugUtilsMessengerEXT>( _debugUtilsMessenger_ ), nullptr
+    );
+}
+
 void VulkanBase::init( Window& window ) 
 {
     /**
@@ -70,10 +80,10 @@ void VulkanBase::init( Window& window )
         /**
          * @brief Creating instance and debugutils
          */
-        _instance_ = vk::createInstance( instanceInfo );
+        _uInstance_ = vk::createInstanceUnique( instanceInfo );
         VkDebugUtilsMessengerEXT dbgUtils;
         debugutils::CreateDebugUtilsMessengerEXT( 
-           static_cast<VkInstance>( _instance_ ), 
+           static_cast<VkInstance>( _uInstance_.get() ), 
            reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT*>(&debugUtilsInfo), 
            nullptr, &dbgUtils
         );
@@ -84,38 +94,38 @@ void VulkanBase::init( Window& window )
      * @brief Surface
      */
     {
-        _surface_ = init::createSurfce( _instance_, window.getPWindow() );
+        _surface_ = init::createSurfce( _uInstance_.get(), window.getPWindow() );
     }
     
     {
-        _physicalDevice_ = init::pickPhysicalDevice( _instance_, _surface_ );
-        _device_ = init::createDevice( _physicalDevice_, _surface_ );
+        _physicalDevice_ = init::pickPhysicalDevice( _uInstance_.get(), _surface_ );
+        _uDevice_ = init::createDeviceUnique( _physicalDevice_, _surface_ );
         {
             auto queue = utils::FindQueueFamilyIndices( _physicalDevice_, _surface_ );
             auto graphicsIndices = queue.graphicsFamily.value();
             auto presentIndices = queue.presentFamily.value();
-            _graphicsQueue_ = _device_.getQueue( graphicsIndices, 0 );
-            _presentQueue_ = _device_.getQueue( presentIndices, 0 );
+            _graphicsQueue_ = _uDevice_->getQueue( graphicsIndices, 0 );
+            _presentQueue_ = _uDevice_->getQueue( presentIndices, 0 );
         }
     }
 
     {
         vma::AllocatorCreateInfo allocatorInfo {};
-        allocatorInfo.setInstance( _instance_ );
+        allocatorInfo.setInstance( _uInstance_.get() );
         allocatorInfo.setPhysicalDevice( _physicalDevice_ );
-        allocatorInfo.setDevice( _device_ );
+        allocatorInfo.setDevice( _uDevice_.get() );
 
         _allocator_ = vma::createAllocator( allocatorInfo );
     }
 
     {
-        _swapchain_.init( _physicalDevice_, _surface_, _device_, vk::Extent2D{ window.ScreenWidth, window.ScreenHeight } );
-        _swapchain_.create();
+        _swapchain_->init( _physicalDevice_, _surface_, _uDevice_.get(), vk::Extent2D{ window.ScreenWidth, window.ScreenHeight } );
+        _swapchain_->create();
     }
 
     {
-        _renderpass_.init( _device_, _allocator_, _swapchain_, true );
-        _renderpass_.create();
+        _renderpass_->init( _physicalDevice_, _uDevice_.get(), _allocator_, _swapchain_.get()->getSwapchain(), true );
+        _renderpass_->create();
     }
 
     _hasBeenCreated_ = true;
@@ -123,15 +133,15 @@ void VulkanBase::init( Window& window )
 
 void VulkanBase::destroy() 
 {
-    _renderpass_.destroy();
-    _swapchain_.destroy();
+    // _renderpass_.destroy();
+    // _swapchain_.destroy();
     _allocator_.destroy(); // depend on instance, physical device, and device
-    _device_.destroy();
-    _instance_.destroySurfaceKHR( _surface_ );
+    // _uDevice_.get().destroy();
+    // _uInstance_.get().destroySurfaceKHR( _surface_ );
     debugutils::DestroyDebugUtilsMessengerEXT( 
-        static_cast<VkInstance>( _instance_ ), static_cast<VkDebugUtilsMessengerEXT>( _debugUtilsMessenger_ ), nullptr
+        static_cast<VkInstance>( _uInstance_.get() ), static_cast<VkDebugUtilsMessengerEXT>( _debugUtilsMessenger_ ), nullptr
     );
-    _instance_.destroy();
+    // _uInstance_.get().destroy();
 }
 
 std::vector<const char*> VulkanBase::instanceValidations() 
@@ -167,7 +177,7 @@ const vk::SurfaceKHR& VulkanBase::getSurface()
 const vk::Device& VulkanBase::getDevice() 
 {
     assert( _hasBeenCreated_ );
-    return _device_;
+    return _uDevice_.get();
 }
 
 const vma::Allocator& VulkanBase::getAllocator() 
@@ -188,14 +198,14 @@ const vk::Queue& VulkanBase::getPresentQueue()
     return _presentQueue_;
 }
 
-Swapchain VulkanBase::getSwapchain() 
+Swapchain* VulkanBase::getSwapchain() 
 {
     assert( _hasBeenCreated_ );
-    return _swapchain_;
+    return &_swapchain_;
 }
 
-Renderpass VulkanBase::getRenderpass() 
+Renderpass* VulkanBase::getRenderpass() 
 {
     assert( _hasBeenCreated_ );
-    return _renderpass_;
+    return &_renderpass_;
 }
