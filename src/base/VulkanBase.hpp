@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 #include "Window.hpp"
-#include "vma/vk_mem_alloc.hpp"
+#include "DeletionQueue.hpp"
 
 #define MAX_FRAME 2
 
@@ -18,8 +18,10 @@ class VulkanBase
 {
     /* Main member functions */
 public:
-    void init( Window& window );
-    void destroy();
+    VulkanBase( Window& window );
+    ~VulkanBase();
+    // void init( Window& window );
+    // void destroy();
 
     /* Utils */
 private:
@@ -28,31 +30,37 @@ private:
 
     /* Getter */
 public:
-    const vk::PhysicalDevice&       getPhysicalDevice();
-    const vk::SurfaceKHR&           getSurface();
-    const vk::Device&               getDevice();
-    const vma::Allocator&           getAllocator();
-    const vk::Queue&                getGraphicsQueue();
-    const vk::Queue&                getPresentQueue();
-    Swapchain                       getSwapchain();
-    Renderpass                      getRenderpass();
+    // const vk::PhysicalDevice&       getPhysicalDevice();
+    // const vk::SurfaceKHR&           getSurface();
+    // const vk::Device&               getDevice();
+    // const vma::Allocator&           getAllocator();
+    // const vk::Queue&                getGraphicsQueue();
+    // const vk::Queue&                getPresentQueue();
 
 private:
     bool _hasBeenCreated_   = false;
 
     /* Main member variables */
 private:
-    vk::Instance                        _instance_;
-    vk::DebugUtilsMessengerEXT          _debugUtilsMessenger_;
-    vma::Allocator                      _allocator_;
-    vk::SurfaceKHR                      _surface_;
-    vk::PhysicalDevice                  _physicalDevice_;
-    vk::Device                          _device_;
-    vk::Queue                           _graphicsQueue_;
-    vk::Queue                           _presentQueue_;
-    Swapchain                           _swapchain_;
-    Renderpass                          _renderpass_;
+    vk::UniqueInstance                  __pInstance;
+    vk::DebugUtilsMessengerEXT          __debugUtilsMessenger;
+    DeletionQueue                       __delQueue;
 
-// private:
-//     unsigned long        _timeOut                      = 1000000000;   // 1 second = 10^(9) nano second
+public:
+//Device
+    vk::SurfaceKHR                      _surface;
+    vk::PhysicalDevice                  _physicalDevice;
+    vk::UniqueDevice                    _pDevice;
+//Queue
+    vk::Queue                           _graphicsQueue;
+    vk::Queue                           _presentQueue;
+//Swapchain
+    vk::UniqueSwapchainKHR              _pSwapchain;
+    vk::Format                          _scFormat;
+    std::vector<vk::Image>              _scImage;
+    std::vector<vk::UniqueImageView>    _pscImageView;
+//Renderpass
+    vk::UniqueRenderPass                _pRenderpass;
+    vku::DepthStencilImage              _prpDepth;
+    std::vector<vk::UniqueFramebuffer>  _prpFramebuffers;
 };

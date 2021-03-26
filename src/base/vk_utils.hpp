@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <optional>
-// #include "vk_mem_alloc.hpp"
+#include "vma/vk_mem_alloc.hpp"
 
 // struct Image
 // {
@@ -58,9 +58,9 @@ bool IsDeviceSuitable(  const vk::PhysicalDevice& physicalDevice,
                         const vk::SurfaceKHR& surface );
 QueueFamilyIndices FindQueueFamilyIndices(  const vk::PhysicalDevice& physicalDevice,
                                             const vk::SurfaceKHR& surface );
-vk::Extent2D chooseSurfaceExtent( vk::SurfaceCapabilitiesKHR& surfaceCapabilities, vk::Extent2D windowExtent );
-vk::SurfaceFormatKHR chooseSurfaceFormat( std::vector<vk::SurfaceFormatKHR>& surfaceFormats );
-vk::PresentModeKHR choosePresentMode( std::vector<vk::PresentModeKHR>& presentModes );
+vk::Extent2D chooseSurfaceExtent( const vk::SurfaceCapabilitiesKHR& surfaceCapabilities, vk::Extent2D windowExtent );
+vk::SurfaceFormatKHR chooseSurfaceFormat( const std::vector<vk::SurfaceFormatKHR>& surfaceFormats );
+vk::PresentModeKHR choosePresentMode( const std::vector<vk::PresentModeKHR>& presentModes );
 std::vector<char> readFile( const std::string& fileName );
 vk::UniqueShaderModule createShaderModule( const vk::Device& device ,const std::vector<char>& code );
 

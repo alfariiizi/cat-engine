@@ -106,7 +106,7 @@ vk::PhysicalDevice init::pickPhysicalDevice( const vk::Instance& instance, const
     return choose;
 }
 
-vk::Device init::createDevice( const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface )
+vk::UniqueDevice init::createDevice( const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface )
 {
     auto graphicsAndPresentQueueFamily = utils::FindQueueFamilyIndices( physicalDevice, surface );
 
@@ -140,10 +140,10 @@ vk::Device init::createDevice( const vk::PhysicalDevice& physicalDevice, const v
         &deviceFeatures                 // device features
     };
 
-    return physicalDevice.createDevice( deviceInfo );
+    return physicalDevice.createDeviceUnique( deviceInfo );
 }
 
-vk::SwapchainKHR init::createSwapchain( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent )
+vk::UniqueSwapchainKHR init::createSwapchain( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent )
 {
     auto surfaceCapability = physicalDevice.getSurfaceCapabilitiesKHR( surface );
     auto surfaceFormats = physicalDevice.getSurfaceFormatsKHR( surface );
@@ -188,10 +188,10 @@ vk::SwapchainKHR init::createSwapchain( const vk::PhysicalDevice& physicalDevice
         swapchainInfo.setQueueFamilyIndices( nullptr );
     }
 
-    return device.createSwapchainKHR( swapchainInfo );
+    return device.createSwapchainKHRUnique( swapchainInfo );
 }
 
-void init::swapchainImageAndImageViews( const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat,std::vector<vk::Image>& outSwapchainImages, std::vector<vk::ImageView>& outSwapchainImageViews )
+void init::swapchainImageAndImageViews( const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat,std::vector<vk::Image>& outSwapchainImages, std::vector<vk::UniqueImageView>& outSwapchainImageViews )
 {
     outSwapchainImages = device.getSwapchainImagesKHR( swapchain );
     outSwapchainImageViews.reserve( outSwapchainImages.size() );
@@ -217,7 +217,7 @@ void init::swapchainImageAndImageViews( const vk::Device& device, const vk::Swap
                 1       // layer count
             }
         };
-        outSwapchainImageViews.emplace_back( device.createImageView( imageViewInfo ) );
+        outSwapchainImageViews.emplace_back( device.createImageViewUnique( imageViewInfo ) );
     }
 }
 

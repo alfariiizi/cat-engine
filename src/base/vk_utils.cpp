@@ -162,7 +162,7 @@ utils::QueueFamilyIndices utils::FindQueueFamilyIndices(  const vk::PhysicalDevi
     return queueFamilyIndices;
 }
 
-vk::Extent2D utils::chooseSurfaceExtent( vk::SurfaceCapabilitiesKHR& surfaceCapabilities, vk::Extent2D windowExtent ) 
+vk::Extent2D utils::chooseSurfaceExtent( const vk::SurfaceCapabilitiesKHR& surfaceCapabilities, vk::Extent2D windowExtent ) 
 {
     if( surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max() )
         return surfaceCapabilities.currentExtent;
@@ -182,7 +182,7 @@ vk::Extent2D utils::chooseSurfaceExtent( vk::SurfaceCapabilitiesKHR& surfaceCapa
     }
 }
 
-vk::SurfaceFormatKHR utils::chooseSurfaceFormat(std::vector<vk::SurfaceFormatKHR>& surfaceFormats) 
+vk::SurfaceFormatKHR utils::chooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) 
 {
     // if just found one surface format
     if( surfaceFormats.size() == 1 && surfaceFormats[0].format == vk::Format::eUndefined )
@@ -204,7 +204,7 @@ vk::SurfaceFormatKHR utils::chooseSurfaceFormat(std::vector<vk::SurfaceFormatKHR
     return surfaceFormats[0];
 }
 
-vk::PresentModeKHR utils::choosePresentMode(std::vector<vk::PresentModeKHR>& presentModes) 
+vk::PresentModeKHR utils::choosePresentMode(const std::vector<vk::PresentModeKHR>& presentModes) 
 {
     // choose the present mode
     for( auto& presentMode : presentModes )
