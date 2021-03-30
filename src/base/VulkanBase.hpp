@@ -3,16 +3,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
+#include "vku/vku.hpp"
 #include "Window.hpp"
 #include "DeletionQueue.hpp"
 
 #define MAX_FRAME 2
-
-struct Descriptor
-{
-    vk::DescriptorPool      _pool;
-    vk::DescriptorSet       _set;
-};
 
 class VulkanBase
 {
@@ -30,6 +25,7 @@ private:
 
     /* Getter */
 public:
+    std::vector<vk::Framebuffer>    getFramebuffers();
     // const vk::PhysicalDevice&       getPhysicalDevice();
     // const vk::SurfaceKHR&           getSurface();
     // const vk::Device&               getDevice();

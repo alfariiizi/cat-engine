@@ -3,62 +3,79 @@
 
 
 Engine::Engine() 
+    :
+    __vulkanbase( __window ),
+    __device( __vulkanbase._pDevice.get() ),
+    __graphics( __vulkanbase._physicalDevice, __vulkanbase._pDevice.get(), __vulkanbase._pRenderpass.get(), __vulkanbase.getFramebuffers(), {Window::ScreenWidth, Window::ScreenHeight}, utils::FindQueueFamilyIndices( __vulkanbase._physicalDevice, __vulkanbase._surface ).graphicsFamily.value(), __vulkanbase._graphicsQueue )
 {
-    init();
+    // init();
+
+    for( int i = 0; i < MAX_FRAME; ++i )
+    {
+        { /// Command
+            auto poolInfo = vk::CommandPoolCreateInfo { vk::CommandPoolCreateFlagBits::eResetCommandBuffer, utils::FindQueueFamilyIndices( __vulkanbase._physicalDevice, __vulkanbase._surface ).graphicsFamily.value() };
+            __commands[i]._pCmdPool = __device.createCommandPoolUnique( poolInfo );
+            auto buffInfo = vk::CommandBufferAllocateInfo { __commands[i]._pCmdPool.get(), vk::CommandBufferLevel::ePrimary, 1 };
+            __commands[i]._pCmdBuffer = std::move(__device.allocateCommandBuffersUnique( buffInfo ).front());
+        }
+        { /// Synch
+            __syncrhonouses[i]._renderFence = __device.createFenceUnique( {vk::FenceCreateFlagBits::eSignaled} );
+            __syncrhonouses[i]._renderSemaphore = __device.createSemaphoreUnique( {} );
+            __syncrhonouses[i]._presentSemaphore = __device.createSemaphoreUnique( {} );
+        }
+    }
+
+
 }
 
 Engine::~Engine() 
 {
-    destroy();
+    __delQueue.flush();
 }
 
 void Engine::init() 
 {
-    _window_.init();
-    _window_.create();
+    // __window.init();
+    // __window.create();
 
-    _vulkanbase_.init( _window_ );  // this is strange, but at this time VulkanBase really don't have create function
+    // __vulkanbase.init( __window );  // this is strange, but at this time VulkanBase really don't have create function
 
-    _pDevice_ = &_vulkanbase_.getDevice();
-    _pAllocator_ = &_vulkanbase_.getAllocator();
+    // __vulkanbase._pDevice = &__vulkanbase.getDevice();
+    // _pAllocator_ = &__vulkanbase.getAllocator();
 
-    for( auto& cmd : _commands_ )
-    {
-        cmd.init( *_pDevice_, _vulkanbase_.getSwapchain().getGraphicsQueueFamilyIndices(), 1, vk::CommandBufferLevel::ePrimary );
-        cmd.create();
-    }
+    // for( auto& cmd : __commands )
+    // {
+    //     cmd.init( *__vulkanbase._pDevice, __vulkanbase.getSwapchain().getGraphicsQueueFamilyIndices(), 1, vk::CommandBufferLevel::ePrimary );
+    //     cmd.create();
+    // }
 
-    for( auto& synch : _syncrhonouses_ )
-    {
-        synch._renderFence = _pDevice_->createFence( {vk::FenceCreateFlagBits::eSignaled} );
-        synch._renderSemaphore = _pDevice_->createSemaphore( {} );
-        synch._presentSemaphore = _pDevice_->createSemaphore( {} );
-    }
+    // for( auto& synch : __syncrhonouses )
+    // {
+    //     synch._renderFence = __vulkanbase._pDevice->createFence( {vk::FenceCreateFlagBits::eSignaled} );
+    //     synch._renderSemaphore = __vulkanbase._pDevice->createSemaphore( {} );
+    //     synch._presentSemaphore = __vulkanbase._pDevice->createSemaphore( {} );
+    // }
 
-    _graphics_.init( _vulkanbase_.getPhysicalDevice(), 
-                        *_pDevice_, 
-                        _vulkanbase_.getRenderpass(), 
-                        _window_.ScreenWidth, _window_.ScreenHeight, 
-                        utils::FindQueueFamilyIndices( _vulkanbase_.getPhysicalDevice(), _vulkanbase_.getSurface()).graphicsAndPresentFamilyIndex().front(), 
-                        _vulkanbase_.getGraphicsQueue(), _vulkanbase_.getPresentQueue() );
-
-
-    _hasBeenInit_ = true;
-    _hasBeenCreated_ = true;
+    // __graphics.init( __vulkanbase.getPhysicalDevice(), 
+    //                     *__vulkanbase._pDevice, 
+    //                     __vulkanbase.getRenderpass(), 
+    //                     __window.ScreenWidth, __window.ScreenHeight, 
+    //                     utils::FindQueueFamilyIndices( __vulkanbase.getPhysicalDevice(), __vulkanbase.getSurface()).graphicsAndPresentFamilyIndex().front(), 
+    //                     __vulkanbase.getGraphicsQueue(), __vulkanbase.getPresentQueue() );
 }
 
 void Engine::draw() 
 {
-    auto cmd = _commands_[_frameInUse_].getBuffers().front();
-    auto presentSemaphore = _syncrhonouses_[_frameInUse_]._presentSemaphore;
-    auto renderSemaphore = _syncrhonouses_[_frameInUse_]._renderSemaphore;
-    auto renderFence = _syncrhonouses_[_frameInUse_]._renderFence;
+    auto cmd = __commands[__frameInUse]._pCmdBuffer.get();
+    auto presentSemaphore = __syncrhonouses[__frameInUse]._presentSemaphore.get();
+    auto renderSemaphore = __syncrhonouses[__frameInUse]._renderSemaphore.get();
+    auto renderFence = __syncrhonouses[__frameInUse]._renderFence.get();
 
-    vk::Result result = _pDevice_->waitForFences( renderFence, VK_TRUE, UINT64_MAX );
-    _pDevice_->resetFences( renderFence );
+    vk::Result result = __vulkanbase._pDevice->waitForFences( renderFence, VK_TRUE, UINT64_MAX );
+    __vulkanbase._pDevice->resetFences( renderFence );
 
-    uint32_t imageIndex = _pDevice_->acquireNextImageKHR( _vulkanbase_.getSwapchain().getSwapchain(), UINT64_MAX, presentSemaphore, nullptr ).value;
-    _graphics_.draw( cmd, imageIndex );
+    uint32_t imageIndex = __vulkanbase._pDevice->acquireNextImageKHR( __vulkanbase._pSwapchain.get(), UINT64_MAX, presentSemaphore, nullptr ).value;
+    __graphics.draw( cmd, imageIndex );
 
     /**
      * @brief Submit Info ( it could be graphics queue, compute queue, or maybe transfer queue )
@@ -71,7 +88,7 @@ void Engine::draw()
     submitInfo.setCommandBuffers( cmd );
     submitInfo.setSignalSemaphores( renderSemaphore );
 
-    _vulkanbase_.getGraphicsQueue().submit( submitInfo, renderFence );
+    __vulkanbase._graphicsQueue.submit( submitInfo, renderFence );
 
 
     /**
@@ -80,50 +97,52 @@ void Engine::draw()
     vk::PresentInfoKHR presentInfo {};
     presentInfo.setWaitSemaphores( renderSemaphore );
 
-    std::vector<vk::SwapchainKHR> swapchains = { _vulkanbase_.getSwapchain().getSwapchain() };
+    std::vector<vk::SwapchainKHR> swapchains = { __vulkanbase._pSwapchain.get() };
     presentInfo.setSwapchains( swapchains );
     presentInfo.setImageIndices( imageIndex );
 
-    result = _vulkanbase_.getPresentQueue().presentKHR( presentInfo );
+    result = __vulkanbase._presentQueue.presentKHR( presentInfo );
     if( result != vk::Result::eSuccess )
         throw std::runtime_error( "Failed to presenting (_presentQueue)" );
 }
 
 void Engine::loop() 
 {
-    while( !_window_.shouldClose() )
+    while( !__window.shouldClose() )
     {
-        _window_.poolEvents();
+        __window.poolEvents();
 
         draw();
 
-        ++_frameNumber_;
-        ++_frameInUse_;
-        _frameInUse_ %= MAX_FRAME;
+        ++__frameNumber;
+        ++__frameInUse;
+        __frameInUse %= MAX_FRAME;
     }
+
+    __device.waitIdle();
 }
 
 void Engine::destroy() 
 {
-    if( _hasBeenCreated_ )
-    {
-        _pDevice_->waitIdle();
+    // if( _hasBeenCreated_ )
+    // {
+    //     __vulkanbase._pDevice->waitIdle();
 
-        _graphics_.destroy();
+    //     __graphics.destroy();
 
-        for( auto& synch : _syncrhonouses_ )
-        {
-            _pDevice_->destroySemaphore( synch._renderSemaphore );
-            _pDevice_->destroySemaphore( synch._presentSemaphore );
-            _pDevice_->destroyFence( synch._renderFence );
-        }
+    //     for( auto& synch : __syncrhonouses )
+    //     {
+    //         __vulkanbase._pDevice->destroySemaphore( synch._renderSemaphore );
+    //         __vulkanbase._pDevice->destroySemaphore( synch._presentSemaphore );
+    //         __vulkanbase._pDevice->destroyFence( synch._renderFence );
+    //     }
 
-        for( auto& cmd : _commands_ )
-            cmd.destroy();
+    //     for( auto& cmd : __commands )
+    //         cmd.destroy();
 
-        _vulkanbase_.destroy();     // must be the 2nd LAST that 'll destroy
-        _window_.destroy();         // must be the 1st LAST that 'll destroy
+    //     __vulkanbase.destroy();     // must be the 2nd LAST that 'll destroy
+    //     __window.destroy();         // must be the 1st LAST that 'll destroy
 
-        _hasBeenCreated_ = false;
-    }
+    //     _hasBeenCreated_ = false;
+    // }
 }

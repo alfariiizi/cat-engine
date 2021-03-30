@@ -1,43 +1,32 @@
 #include "Graphics.hpp"
+#include "ShaderStruct.hpp"
 
+Graphics::Graphics(vk::PhysicalDevice physicalDevice,
+                   vk::Device device,
+                   vk::RenderPass rp,
+                   std::vector<vk::Framebuffer> fbs,
+                   const vk::Extent2D &extent,
+                   uint32_t queueIndex,
+                   vk::Queue queue)
+    :
+    __physicalDevice( physicalDevice ),
+    __device( device ),
+    __renderpass( rp ),
+    __framebuffers( fbs ),
+    __extent( extent ),
+    __queueFamilyIndex( queueIndex ),
+    __queue( queue ),
+    __material( physicalDevice, device, rp, queueIndex, queue, extent.width, extent.height )
+{
+    // vertBuffer = vku::VertexBuffer{ device, physicalDevice.getMemoryProperties(), sizeof(Texture_Vertex) * vertices.size() };
+    vertBuffer = vku::HostVertexBuffer{ device, physicalDevice.getMemoryProperties(), vertices };
+}
 
 Graphics::~Graphics() 
 {
-    destroy();
+    __delQueue.flush();
 }
 
-void Graphics::init( vk::PhysicalDevice physicalDevice, const vk::Device& device, const Renderpass& renderpass, uint32_t width, uint32_t height, uint32_t queueIndex, vk::Queue graphicsQueue, vk::Queue presentQueue ) 
-{
-    _physicalDevice_ = physicalDevice;
-    _pDevice_ = &device;
-    _renderpass_ = renderpass;
-    _queue_._graphics = graphicsQueue;
-    _queue_._present = presentQueue;
-    _width_ = width;
-    _height_ = height;
-
-    material.init( _physicalDevice_, *_pDevice_, _renderpass_.getRenderpass(), queueIndex, _queue_._graphics, _width_, _height_ );
-
-    vertBuffer = { *_pDevice_, _physicalDevice_.getMemoryProperties(), vertices };
-
-
-    _hasBeenInit_ = true;
-    _hasBeenCreated_ = true;
-}
-
-void Graphics::destroy() 
-{
-    assert( _hasBeenInit_ );
-
-    if( _hasBeenCreated_ )
-    {
-        material.destroy();
-
-        vertBuffer.~HostVertexBuffer();
-
-        _hasBeenCreated_ = false;
-    }
-}
 
 void Graphics::draw(vk::CommandBuffer cmd, uint32_t imageIndex ) 
 {
@@ -48,16 +37,22 @@ void Graphics::draw(vk::CommandBuffer cmd, uint32_t imageIndex )
 
     vk::Rect2D area;
     area.setOffset( vk::Offset2D{0, 0} );
-    area.setExtent( vk::Extent2D{ _width_, _height_ } );
-    auto renderpassBeginInfo = vk::RenderPassBeginInfo{
-        _renderpass_.getRenderpass(),
-        _renderpass_.getFramebuffer()[imageIndex],
-        area,
-        clearValues
-    };
+    area.setExtent( __extent );
+    // auto renderpassBeginInfo = vk::RenderPassBeginInfo{
+    //     __renderpass,
+    //     __framebuffers[imageIndex],
+    //     area,
+    //     clearValues
+    // };
+    
+    auto renderpassbegInfo = vk::RenderPassBeginInfo{};
+    renderpassbegInfo.setRenderPass( __renderpass );
+    renderpassbegInfo.setFramebuffer( __framebuffers[imageIndex] );
+    renderpassbegInfo.setRenderArea( area );
+    renderpassbegInfo.setClearValues( clearValues );
 
     /// Giving Command
-    giveCommand( cmd, imageIndex, renderpassBeginInfo );
+    giveCommand( cmd, imageIndex, renderpassbegInfo );
 }
 
 void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::RenderPassBeginInfo& rpBeginInfo ) 
@@ -66,12 +61,11 @@ void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::Rend
     cmd.beginRenderPass( rpBeginInfo, vk::SubpassContents::eInline );
 
     /// RECORDING
-    auto it_material = material.getMaterial( "basicTextured" );
+    auto pipeline = __material.getPipeline("triangle");
     {
-
-        cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, it_material->_pipeline );
+        cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, pipeline->_pipeline );
         cmd.bindVertexBuffers( 0, vertBuffer.buffer(), vk::DeviceSize{0} );
-        cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, it_material->_layout, 0, it_material->_set, nullptr );
+        // cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, it_material->_layout, 0, it_material->_set, nullptr );
         cmd.draw( vertices.size(), 1, 0, 0 );
     }
 

@@ -12,7 +12,9 @@ struct VertexInputDescription
     vk::PipelineVertexInputStateCreateFlags flags = vk::PipelineVertexInputStateCreateFlags();
 };
 
-struct Vertex
+namespace Vertex
+{
+struct SimpleVertex
 {
     glm::vec3 position;
     // glm::vec3 normal;
@@ -27,7 +29,7 @@ struct Vertex
         vk::VertexInputBindingDescription mainBinding{};
         mainBinding.setBinding( 0 );
         mainBinding.setInputRate( vk::VertexInputRate::eVertex );
-        mainBinding.setStride( sizeof( Vertex ) );
+        mainBinding.setStride( sizeof( SimpleVertex ) );
         description.bindings.push_back( mainBinding );
 
 
@@ -36,7 +38,7 @@ struct Vertex
         positionAttribute.setBinding( 0 );
         positionAttribute.setLocation( 0 );
         positionAttribute.setFormat( vk::Format::eR32G32B32Sfloat );
-        positionAttribute.setOffset( offsetof( Vertex, position ) );
+        positionAttribute.setOffset( offsetof( SimpleVertex, position ) );
         description.attributs.push_back( positionAttribute );
 
         // // normal will be stored at location = 1
@@ -53,7 +55,7 @@ struct Vertex
         // colorAttribute.setLocation( 2 );
         colorAttribute.setLocation( 1 );
         colorAttribute.setFormat( vk::Format::eR32G32B32Sfloat );
-        colorAttribute.setOffset( offsetof( Vertex, color ) );
+        colorAttribute.setOffset( offsetof( SimpleVertex, color ) );
         description.attributs.push_back( colorAttribute );
 
         // uv will be stored at location = 3
@@ -68,8 +70,9 @@ struct Vertex
     }
 };
 
-struct Texture_Vertex
+struct Texture
 {
     glm::vec3 position;
     glm::vec2 uv;
 };
+}

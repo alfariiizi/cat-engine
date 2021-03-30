@@ -1,4 +1,4 @@
-#include "engine/Engine.hpp"
+#include "Engine.hpp"
 
 #include <iostream>
 
@@ -9,7 +9,6 @@ int main()
     {
         Engine engine;
         engine.loop();
-        engine.destroy();
     }
     catch( const vk::SystemError& err )
     {

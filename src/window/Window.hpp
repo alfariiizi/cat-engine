@@ -10,6 +10,8 @@
 class Window
 {
 public:
+    Window();
+    ~Window();
     void init();
     void create();
     void destroy();
@@ -27,8 +29,8 @@ public:
     static constexpr uint32_t ScreenHeight  = 600U;
 
 private:
-    bool _hasBeenInit_      = false;
-    bool _hasBeenCreated_   = false;
+    // bool _hasBeenInit_      = false;
+    // bool _hasBeenCreated_   = false;
 
 private:
     GLFWwindow*     _pWindow_;

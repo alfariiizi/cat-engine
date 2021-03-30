@@ -77,9 +77,6 @@ VulkanBase::VulkanBase(Window& window)
 
     { /// Surface
         _surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
-        __delQueue.pushFunction( [i=__pInstance.get(), s=_surface](){
-            i.destroySurfaceKHR( s );
-        });
     }
     
     { /// Device
@@ -102,7 +99,7 @@ VulkanBase::VulkanBase(Window& window)
         init::swapchainImageAndImageViews( _pDevice.get(), _pSwapchain.get(), _scFormat, _scImage, _pscImageView );
     }
 
-    {
+    { /// Renderpass
         _prpDepth = vku::DepthStencilImage{ _pDevice.get(), _physicalDevice.getMemoryProperties(), Window::ScreenWidth, Window::ScreenHeight };
 
         vk::AttachmentDescription colorAttachment {};
@@ -171,11 +168,29 @@ VulkanBase::VulkanBase(Window& window)
 
         _pRenderpass = _pDevice->createRenderPassUnique( renderpassInfo );
     }
+    { /// Framebuffers
+        _prpFramebuffers.reserve( _scImage.size() );
+
+        for( const auto& view : _pscImageView )
+        {
+            std::vector<vk::ImageView> attachments = { view.get(), _prpDepth.imageView() };
+
+            vk::FramebufferCreateInfo fbInfo {};
+            fbInfo.setAttachments( attachments );
+            fbInfo.setRenderPass( _pRenderpass.get() );
+            fbInfo.setWidth( Window::ScreenWidth );
+            fbInfo.setHeight( Window::ScreenHeight );
+            fbInfo.setLayers( 1 );
+
+            _prpFramebuffers.emplace_back( _pDevice->createFramebufferUnique( fbInfo ) );
+        }
+    }
 }
 
 VulkanBase::~VulkanBase() 
 {
     __delQueue.flush();
+    __pInstance->destroySurfaceKHR( _surface );
     debugutils::DestroyDebugUtilsMessengerEXT( 
         static_cast<VkInstance>( __pInstance.get() ), static_cast<VkDebugUtilsMessengerEXT>( __debugUtilsMessenger ), nullptr
     );
@@ -365,6 +380,16 @@ std::vector<const char*> VulkanBase::instanceExtensions()
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     return extensions;
+}
+
+std::vector<vk::Framebuffer> VulkanBase::getFramebuffers() 
+{
+    std::vector<vk::Framebuffer> fbs;
+    fbs.reserve( _prpFramebuffers.size() );
+    for( auto& fb : _prpFramebuffers )
+        fbs.emplace_back( fb.get() );
+
+    return fbs;
 }
 
 // const vk::PhysicalDevice& VulkanBase::getPhysicalDevice() 

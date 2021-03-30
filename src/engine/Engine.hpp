@@ -2,7 +2,7 @@
 
 #include "VulkanBase.hpp"
 #include "Window.hpp"
-#include "Command.hpp"
+// #include "Command.hpp"
 // #include "Synchronous.hpp"
 #include "Graphics.hpp"
 
@@ -23,26 +23,26 @@ public:
 private:
     struct Synchronous
     {
-        vk::Semaphore       _presentSemaphore;
-        vk::Semaphore       _renderSemaphore;
-        vk::Fence           _renderFence;
+        vk::UniqueSemaphore _presentSemaphore;
+        vk::UniqueSemaphore _renderSemaphore;
+        vk::UniqueFence     _renderFence;
+    };
+    struct Command
+    {
+        vk::UniqueCommandPool   _pCmdPool;
+        vk::UniqueCommandBuffer _pCmdBuffer;
     };
 
 private:
-    VulkanBase                              _vulkanbase_;
-    Window                                  _window_;
-    std::array<Command, MAX_FRAME>          _commands_;
-    std::array<Synchronous, MAX_FRAME>      _syncrhonouses_;
-    Graphics                                _graphics_;
-    uint32_t                                _frameNumber_           = 0;
-    uint32_t                                _frameInUse_            = 0;
+    Window                                  __window;
+    VulkanBase                              __vulkanbase;
+    std::array<Command, MAX_FRAME>          __commands;
+    std::array<Synchronous, MAX_FRAME>      __syncrhonouses;
+    Graphics                                __graphics;
+    uint32_t                                __frameNumber           = 0;
+    uint32_t                                __frameInUse            = 0;
+    DeletionQueue                           __delQueue;
 
 private:
-    bool _hasBeenInit_      = false;
-    bool _hasBeenCreated_   = false;
-
-private:
-    const vk::Device*       _pDevice_;
-    const vma::Allocator*   _pAllocator_;
-
+    vk::Device  __device;
 };
