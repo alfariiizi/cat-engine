@@ -19,7 +19,7 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
     __material( physicalDevice, device, rp, queueIndex, queue, extent.width, extent.height )
 {
     // vertBuffer = vku::VertexBuffer{ device, physicalDevice.getMemoryProperties(), sizeof(Texture_Vertex) * vertices.size() };
-    vertBuffer = vku::HostVertexBuffer{ device, physicalDevice.getMemoryProperties(), vertices };
+    vertBuffer = vku::HostVertexBuffer{ __device, __physicalDevice.getMemoryProperties(), vertices };
 }
 
 Graphics::~Graphics() 

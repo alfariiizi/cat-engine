@@ -41,6 +41,7 @@ private:
     Graphics                                __graphics;
     uint32_t                                __frameNumber           = 0;
     uint32_t                                __frameInUse            = 0;
+    vma::Allocator                          __allocator;
     DeletionQueue                           __delQueue;
 
 private:

@@ -75,6 +75,19 @@ VulkanBase::VulkanBase(Window& window)
         });
     }
 
+    { /// Allocator
+        vma::AllocatorCreateInfo allocatorInfo {};
+        allocatorInfo.setInstance( __pInstance.get() );
+        allocatorInfo.setPhysicalDevice( _physicalDevice );
+        allocatorInfo.setDevice( _pDevice.get() );
+        allocatorInfo.setVulkanApiVersion( VK_API_VERSION_1_1 );
+
+        __allocator = vma::createAllocator( allocatorInfo );
+        __delQueue.pushFunction( [&](){
+            __allocator.destroy();
+        });
+    }
+
     { /// Surface
         _surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
     }

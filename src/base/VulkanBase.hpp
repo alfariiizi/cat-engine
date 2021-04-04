@@ -6,6 +6,7 @@
 #include "vku/vku.hpp"
 #include "Window.hpp"
 #include "DeletionQueue.hpp"
+#include "vma/vk_mem_alloc.hpp"
 
 #define MAX_FRAME 2
 
@@ -25,6 +26,8 @@ private:
 
     /* Getter */
 public:
+    vk::Instance instance() { return __pInstance.get(); };
+    vma::Allocator allocator() { return __allocator; };
     std::vector<vk::Framebuffer>    getFramebuffers();
     // const vk::PhysicalDevice&       getPhysicalDevice();
     // const vk::SurfaceKHR&           getSurface();
@@ -40,6 +43,7 @@ private:
 private:
     vk::UniqueInstance                  __pInstance;
     vk::DebugUtilsMessengerEXT          __debugUtilsMessenger;
+    vma::Allocator                      __allocator;
     DeletionQueue                       __delQueue;
 
 public:

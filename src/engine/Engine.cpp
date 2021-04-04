@@ -8,7 +8,18 @@ Engine::Engine()
     __device( __vulkanbase._pDevice.get() ),
     __graphics( __vulkanbase._physicalDevice, __vulkanbase._pDevice.get(), __vulkanbase._pRenderpass.get(), __vulkanbase.getFramebuffers(), {Window::ScreenWidth, Window::ScreenHeight}, utils::FindQueueFamilyIndices( __vulkanbase._physicalDevice, __vulkanbase._surface ).graphicsFamily.value(), __vulkanbase._graphicsQueue )
 {
-    // init();
+    {
+        vma::AllocatorCreateInfo allocatorInfo {};
+        allocatorInfo.setInstance( __vulkanbase.instance() );
+        allocatorInfo.setPhysicalDevice( __vulkanbase._physicalDevice );
+        allocatorInfo.setDevice( __vulkanbase._pDevice.get() );
+        allocatorInfo.setVulkanApiVersion( VK_API_VERSION_1_1 );
+
+        __allocator = vma::createAllocator( allocatorInfo );
+        __delQueue.pushFunction( [&](){
+            __allocator.destroy();
+        });
+    }
 
     for( int i = 0; i < MAX_FRAME; ++i )
     {
