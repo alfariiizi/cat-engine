@@ -221,6 +221,36 @@ void init::swapchainImageAndImageViews( const vk::Device& device, const vk::Swap
     }
 }
 
+void swapchainImageAndImageViews(const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat, std::vector<vk::Image>& outSwapchainImages, std::vector<vk::ImageView>& outSwapchainImageViews) 
+{
+    outSwapchainImages = device.getSwapchainImagesKHR( swapchain );
+    outSwapchainImageViews.reserve( outSwapchainImages.size() );
+
+    for( auto& image : outSwapchainImages )
+    {
+        vk::ImageViewCreateInfo imageViewInfo {
+            vk::ImageViewCreateFlags(),
+            image,
+            vk::ImageViewType::e2D,
+            swapchainFormat,
+            vk::ComponentMapping{
+                vk::ComponentSwizzle::eIdentity,
+                vk::ComponentSwizzle::eIdentity,
+                vk::ComponentSwizzle::eIdentity,
+                vk::ComponentSwizzle::eIdentity,
+            },
+            vk::ImageSubresourceRange {
+                vk::ImageAspectFlagBits::eColor,    // aspect flags
+                0,      // base mip map
+                1,      // level count
+                0,      // base array layer
+                1       // layer count
+            }
+        };
+        outSwapchainImageViews.emplace_back( device.createImageViewUnique( imageViewInfo ) );
+    }
+}
+
 vk::CommandPool init::createCommandPool( const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface, const vk::Device& device )
 {
     auto graphicsAndPresentQueueFamilyIndex = utils::FindQueueFamilyIndices( physicalDevice, surface );

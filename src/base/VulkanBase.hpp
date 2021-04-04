@@ -10,6 +10,12 @@
 
 #define MAX_FRAME 2
 
+struct Queue
+{
+    vk::Queue _graphics;
+    vk::Queue _present;
+};
+
 class VulkanBase
 {
     /* Main member functions */
@@ -26,9 +32,18 @@ private:
 
     /* Getter */
 public:
-    vk::Instance instance() { return __pInstance.get(); };
-    vma::Allocator allocator() { return __allocator; };
-    std::vector<vk::Framebuffer>    getFramebuffers();
+    vk::Instance                    instance() const            { return __pInstance.get(); };
+    vma::Allocator                  allocator() const           { return __allocator; };
+    vk::PhysicalDevice              physicalDevice() const      { return __physicalDevice; };
+    vk::Device                      device() const              { return __pDevice.get(); };
+    vk::SurfaceKHR                  surface() const             { return __surface; };
+    Queue                           graphicsPresentQueue()      { return { __graphicsQueue, __presentQueue }; };
+    vk::SwapchainKHR                swapchain() const           { return __swapchain; };
+    vk::Format                      swapchainFormat() const     { return __scFormat; };
+    std::vector<vk::Image>          swapchainImages() const     { return __scImages; };
+    std::vector<vk::ImageView>      swapchainImageViews() const { return __scImageViews; };
+    vk::RenderPass                  renderpass() const          { return __renderpass; };
+    std::vector<vk::Framebuffer>    framebuffers()              { return __rpFramebuffers; };
     // const vk::PhysicalDevice&       getPhysicalDevice();
     // const vk::SurfaceKHR&           getSurface();
     // const vk::Device&               getDevice();
@@ -46,21 +61,21 @@ private:
     vma::Allocator                      __allocator;
     DeletionQueue                       __delQueue;
 
-public:
+private:
 //Device
-    vk::SurfaceKHR                      _surface;
-    vk::PhysicalDevice                  _physicalDevice;
-    vk::UniqueDevice                    _pDevice;
+    vk::SurfaceKHR                      __surface;
+    vk::PhysicalDevice                  __physicalDevice;
+    vk::UniqueDevice                    __pDevice;
 //Queue
-    vk::Queue                           _graphicsQueue;
-    vk::Queue                           _presentQueue;
+    vk::Queue                           __graphicsQueue;
+    vk::Queue                           __presentQueue;
 //Swapchain
-    vk::UniqueSwapchainKHR              _pSwapchain;
-    vk::Format                          _scFormat;
-    std::vector<vk::Image>              _scImage;
-    std::vector<vk::UniqueImageView>    _pscImageView;
+    vk::SwapchainKHR                    __swapchain;
+    vk::Format                          __scFormat;
+    std::vector<vk::Image>              __scImages;
+    std::vector<vk::ImageView>          __scImageViews;
 //Renderpass
-    vk::UniqueRenderPass                _pRenderpass;
-    vku::DepthStencilImage              _prpDepth;
-    std::vector<vk::UniqueFramebuffer>  _prpFramebuffers;
+    vk::RenderPass                      __renderpass;
+    vku::DepthStencilImage              __prpDepth;
+    std::vector<vk::Framebuffer>        __rpFramebuffers;
 };

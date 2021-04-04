@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "vku/vku.hpp"
+#include "utils.hpp"
 
 
 VulkanBase::VulkanBase(Window& window) 
@@ -78,8 +79,8 @@ VulkanBase::VulkanBase(Window& window)
     { /// Allocator
         vma::AllocatorCreateInfo allocatorInfo {};
         allocatorInfo.setInstance( __pInstance.get() );
-        allocatorInfo.setPhysicalDevice( _physicalDevice );
-        allocatorInfo.setDevice( _pDevice.get() );
+        allocatorInfo.setPhysicalDevice( __physicalDevice );
+        allocatorInfo.setDevice( __pDevice.get() );
         allocatorInfo.setVulkanApiVersion( VK_API_VERSION_1_1 );
 
         __allocator = vma::createAllocator( allocatorInfo );
@@ -89,35 +90,52 @@ VulkanBase::VulkanBase(Window& window)
     }
 
     { /// Surface
-        _surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
+        __surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
+        __delQueue.pushFunction([&](){
+            __pInstance->destroySurfaceKHR( __surface );
+        });
     }
     
     { /// Device
-        _physicalDevice = init::pickPhysicalDevice( __pInstance.get(), _surface );
-        _pDevice = init::createDevice( _physicalDevice, _surface );
+        __physicalDevice = init::pickPhysicalDevice( __pInstance.get(), __surface );
+        __pDevice = init::createDevice( __physicalDevice, __surface );
         {
-            auto queue = utils::FindQueueFamilyIndices( _physicalDevice, _surface );
+            auto queue = utils::FindQueueFamilyIndices( __physicalDevice, __surface );
             auto graphicsIndices = queue.graphicsFamily.value();
             auto presentIndices = queue.presentFamily.value();
-            _graphicsQueue = _pDevice->getQueue( graphicsIndices, 0 );
-            _presentQueue = _pDevice->getQueue( presentIndices, 0 );
+            __graphicsQueue = __pDevice->getQueue( graphicsIndices, 0 );
+            __presentQueue = __pDevice->getQueue( presentIndices, 0 );
         }
     }
 
     { /// Swapchain
-        _pSwapchain = init::createSwapchain( _physicalDevice, _pDevice.get(), _surface, { Window::ScreenWidth, Window::ScreenHeight} );
-        _scFormat = utils::chooseSurfaceFormat( _physicalDevice.getSurfaceFormatsKHR( _surface ) ).format;
+        __swapchain = init::createSwapchainRaw( __physicalDevice, __pDevice.get(), __surface, { Window::ScreenWidth, Window::ScreenHeight} );
+        __delQueue.pushFunction([&](){
+            __pDevice->destroySwapchainKHR( __swapchain );
+        });
+
+        __scFormat = utils::chooseSurfaceFormat( __physicalDevice.getSurfaceFormatsKHR( __surface ) ).format;
 
         // if this retrieve of image view has an error, then do generate yourself
-        init::swapchainImageAndImageViews( _pDevice.get(), _pSwapchain.get(), _scFormat, _scImage, _pscImageView );
+        init::swapchainImageAndImageViews( __pDevice.get(), __swapchain, __scFormat, __scImages, __scImageViews );
+        __delQueue.pushFunction([&](){
+            for( auto& iv : __scImageViews )
+                __pDevice->destroyImageView( iv );
+        });
     }
 
     { /// Renderpass
-        _prpDepth = vku::DepthStencilImage{ _pDevice.get(), _physicalDevice.getMemoryProperties(), Window::ScreenWidth, Window::ScreenHeight };
+        __prpDepth = vku::DepthStencilImage{ __pDevice.get(), __physicalDevice.getMemoryProperties(), Window::ScreenWidth, Window::ScreenHeight };
+        __delQueue.pushFunction( [&](){
+            auto image = std::move( __prpDepth.image() );
+            auto imageView = std::move( __prpDepth.imageView() );
+            __pDevice->destroyImageView( imageView );
+            __pDevice->destroyImage( image );
+        });
 
         vk::AttachmentDescription colorAttachment {};
         //the attachment will have the format needed by the swapchain
-        colorAttachment.setFormat           ( _scFormat );
+        colorAttachment.setFormat           ( __scFormat );
         //1 sample, we won't be doing MSAA
         colorAttachment.setSamples          ( vk::SampleCountFlagBits::e1 );
         // we Clear when this attachment is loaded
@@ -145,7 +163,7 @@ VulkanBase::VulkanBase(Window& window)
          * @brief the renderpass will use this DEPTH attachment.
          */
         vk::AttachmentDescription depthAttachment {};
-        depthAttachment.setFormat( _prpDepth.format() );
+        depthAttachment.setFormat( __prpDepth.format() );
         depthAttachment.setSamples( vk::SampleCountFlagBits::e1 );  // we won't use fancy sample for right now
         depthAttachment.setLoadOp( vk::AttachmentLoadOp::eClear );
         depthAttachment.setStoreOp( vk::AttachmentStoreOp::eStore );
@@ -179,34 +197,41 @@ VulkanBase::VulkanBase(Window& window)
         renderpassInfo.setAttachments( attachDescs );
         renderpassInfo.setSubpasses( subpass );
 
-        _pRenderpass = _pDevice->createRenderPassUnique( renderpassInfo );
+        __renderpass = __pDevice->createRenderPass( renderpassInfo );
+        __delQueue.pushFunction([&](){
+            __pDevice->destroyRenderPass( __renderpass );
+        });
     }
     { /// Framebuffers
-        _prpFramebuffers.reserve( _scImage.size() );
+        __rpFramebuffers.reserve( __scImages.size() );
 
-        for( const auto& view : _pscImageView )
+        for( const auto& view : __scImageViews )
         {
-            std::vector<vk::ImageView> attachments = { view.get(), _prpDepth.imageView() };
+            std::vector<vk::ImageView> attachments = { view, __prpDepth.imageView() };
 
             vk::FramebufferCreateInfo fbInfo {};
             fbInfo.setAttachments( attachments );
-            fbInfo.setRenderPass( _pRenderpass.get() );
+            fbInfo.setRenderPass( __renderpass );
             fbInfo.setWidth( Window::ScreenWidth );
             fbInfo.setHeight( Window::ScreenHeight );
             fbInfo.setLayers( 1 );
 
-            _prpFramebuffers.emplace_back( _pDevice->createFramebufferUnique( fbInfo ) );
+            __rpFramebuffers.emplace_back( __pDevice->createFramebufferUnique( fbInfo ) );
         }
+        __delQueue.pushFunction([d=__pDevice.get(), fbs=__rpFramebuffers](){
+            for( auto& fb : fbs )
+                d.destroyFramebuffer(fb);
+        });
     }
 }
 
 VulkanBase::~VulkanBase() 
 {
     __delQueue.flush();
-    __pInstance->destroySurfaceKHR( _surface );
-    debugutils::DestroyDebugUtilsMessengerEXT( 
-        static_cast<VkInstance>( __pInstance.get() ), static_cast<VkDebugUtilsMessengerEXT>( __debugUtilsMessenger ), nullptr
-    );
+    // __pInstance->destroySurfaceKHR( __surface );
+    // debugutils::DestroyDebugUtilsMessengerEXT( 
+    //     static_cast<VkInstance>( __pInstance.get() ), static_cast<VkDebugUtilsMessengerEXT>( __debugUtilsMessenger ), nullptr
+    // );
 }
 
 // void VulkanBase::init( Window& window ) 
@@ -273,35 +298,35 @@ VulkanBase::~VulkanBase()
 //     }
 
 //     { /// Surface
-//         _surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
+//         __surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
 //     }
     
 //     { /// Device
-//         _physicalDevice = init::pickPhysicalDevice( __pInstance.get(), _surface );
-//         _pDevice = init::createDevice( _physicalDevice, _surface );
+//         __physicalDevice = init::pickPhysicalDevice( __pInstance.get(), __surface );
+//         __pDevice = init::createDevice( __physicalDevice, __surface );
 //         {
-//             auto queue = utils::FindQueueFamilyIndices( _physicalDevice, _surface );
+//             auto queue = utils::FindQueueFamilyIndices( __physicalDevice, __surface );
 //             auto graphicsIndices = queue.graphicsFamily.value();
 //             auto presentIndices = queue.presentFamily.value();
-//             _graphicsQueue = _pDevice->getQueue( graphicsIndices, 0 );
-//             _presentQueue = _pDevice->getQueue( presentIndices, 0 );
+//             __graphicsQueue = __pDevice->getQueue( graphicsIndices, 0 );
+//             __presentQueue = __pDevice->getQueue( presentIndices, 0 );
 //         }
 //     }
 
 //     { /// Swapchain
-//         _pSwapchain = init::createSwapchain( _physicalDevice, _pDevice.get(), _surface, { Window::ScreenWidth, Window::ScreenHeight} );
-//         _scFormat = utils::chooseSurfaceFormat( _physicalDevice.getSurfaceFormatsKHR( _surface ) ).format;
+//         __swapchain = init::createSwapchain( __physicalDevice, __pDevice.get(), __surface, { Window::ScreenWidth, Window::ScreenHeight} );
+//         __scFormat = utils::chooseSurfaceFormat( __physicalDevice.getSurfaceFormatsKHR( __surface ) ).format;
 
 //         // if this retrieve of image view has an error, then do generate yourself
-//         init::swapchainImageAndImageViews( _pDevice.get(), _pSwapchain.get(), _scFormat, _scImage, _pscImageView );
+//         init::swapchainImageAndImageViews( __pDevice.get(), __swapchain, __scFormat, __scImages, __scImageViews );
 //     }
 
 //     {
-//         _prpDepth = vku::DepthStencilImage{ _pDevice.get(), _physicalDevice.getMemoryProperties(), Window::ScreenWidth, Window::ScreenHeight };
+//         __prpDepth = vku::DepthStencilImage{ __pDevice.get(), __physicalDevice.getMemoryProperties(), Window::ScreenWidth, Window::ScreenHeight };
 
 //         vk::AttachmentDescription colorAttachment {};
 //         //the attachment will have the format needed by the swapchain
-//         colorAttachment.setFormat           ( _scFormat );
+//         colorAttachment.setFormat           ( __scFormat );
 //         //1 sample, we won't be doing MSAA
 //         colorAttachment.setSamples          ( vk::SampleCountFlagBits::e1 );
 //         // we Clear when this attachment is loaded
@@ -329,7 +354,7 @@ VulkanBase::~VulkanBase()
 //          * @brief the renderpass will use this DEPTH attachment.
 //          */
 //         vk::AttachmentDescription depthAttachment {};
-//         depthAttachment.setFormat( _prpDepth.format() );
+//         depthAttachment.setFormat( __prpDepth.format() );
 //         depthAttachment.setSamples( vk::SampleCountFlagBits::e1 );  // we won't use fancy sample for right now
 //         depthAttachment.setLoadOp( vk::AttachmentLoadOp::eClear );
 //         depthAttachment.setStoreOp( vk::AttachmentStoreOp::eStore );
@@ -363,7 +388,7 @@ VulkanBase::~VulkanBase()
 //         renderpassInfo.setAttachments( attachDescs );
 //         renderpassInfo.setSubpasses( subpass );
 
-//         _pRenderpass = _pDevice->createRenderPassUnique( renderpassInfo );
+//         __renderpass = __pDevice->createRenderPassUnique( renderpassInfo );
 //     }
 
 //     // _hasBeenCreated_ = true;
@@ -371,7 +396,7 @@ VulkanBase::~VulkanBase()
 
 // void VulkanBase::destroy() 
 // {
-//     __pInstance->destroySurfaceKHR( _surface );
+//     __pInstance->destroySurfaceKHR( __surface );
 //     debugutils::DestroyDebugUtilsMessengerEXT( 
 //         static_cast<VkInstance>( __pInstance.get() ), static_cast<VkDebugUtilsMessengerEXT>( __debugUtilsMessenger ), nullptr
 //     );
@@ -395,42 +420,32 @@ std::vector<const char*> VulkanBase::instanceExtensions()
     return extensions;
 }
 
-std::vector<vk::Framebuffer> VulkanBase::getFramebuffers() 
-{
-    std::vector<vk::Framebuffer> fbs;
-    fbs.reserve( _prpFramebuffers.size() );
-    for( auto& fb : _prpFramebuffers )
-        fbs.emplace_back( fb.get() );
-
-    return fbs;
-}
-
 // const vk::PhysicalDevice& VulkanBase::getPhysicalDevice() 
 // {
 //     assert( _hasBeenCreated_ );
-//     return _physicalDevice;
+//     return __physicalDevice;
 // }
 
 // const vk::SurfaceKHR& VulkanBase::getSurface() 
 // {
 //     assert( _hasBeenCreated_ );
-//     return _surface;
+//     return __surface;
 // }
 
 // const vk::Device& VulkanBase::getDevice() 
 // {
 //     assert( _hasBeenCreated_ );
-//     return _pDevice.get();
+//     return __pDevice.get();
 // }
 
 // const vk::Queue& VulkanBase::getGraphicsQueue() 
 // {
 //     assert( _hasBeenCreated_ );
-//     return _graphicsQueue;
+//     return __graphicsQueue;
 // }
 
 // const vk::Queue& VulkanBase::getPresentQueue() 
 // {
 //     assert( _hasBeenCreated_ );
-//     return _presentQueue;
+//     return __presentQueue;
 // }
