@@ -3,6 +3,7 @@
 // #include "vku/vku.hpp"
 #include <glm/glm.hpp>
 
+
 /*** @brief UTILS */
 struct VertexInputDescription
 {
@@ -10,6 +11,14 @@ struct VertexInputDescription
     std::vector<vk::VertexInputAttributeDescription> attributs;
 
     vk::PipelineVertexInputStateCreateFlags flags = vk::PipelineVertexInputStateCreateFlags();
+};
+
+
+// Using std430 rule: All the data must be float of vec4. Note that mat4 is 4 * vec4, so it's okay to use.
+struct MeshPushConstants
+{
+    glm::vec4 data;
+    glm::mat4 renderMatrix;
 };
 
 namespace Vertex

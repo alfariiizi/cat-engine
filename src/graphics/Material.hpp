@@ -1,9 +1,9 @@
 #pragma once
 
 #include "vku/vku.hpp"
-#include "ShaderStruct.hpp"
 #include <string>
 #include "DeletionQueue.hpp"
+#include "ShaderStruct.hpp"
 
 
 struct Pipeline

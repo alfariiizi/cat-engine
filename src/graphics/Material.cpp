@@ -1,11 +1,11 @@
+#define PUSH_CONSTANT
 #include "Material.hpp"
 #include <stdio.h>
-
-#include "ShaderStruct.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+typedef MeshPushConstants PushConstants;
 
 Materials::Materials(vk::PhysicalDevice      physicalDevice, 
                 vk::Device              device, 
@@ -263,6 +263,8 @@ void Materials::createPipeline()
         /// Layout (CHANGEABLE)
         {
             auto layoutMaker = vku::PipelineLayoutMaker{};
+            layoutMaker.pushConstantRange( vk::ShaderStageFlagBits::eVertex, 0, sizeof( PushConstants ) );
+
             pipelineLayout = layoutMaker.createUnique( __device ).release();
             __delQueue.pushFunction([d=__device, pl=pipelineLayout](){
                 d.destroyPipelineLayout( pl );
@@ -271,7 +273,7 @@ void Materials::createPipeline()
 
 
         /// Shader (CHANGEABLE)
-        std::string filename = "simpletriangle";
+        std::string filename = "pushConstantTriangle";
 
         filename.append(".spv");
         std::string vertFilename = __vertexShaderPath + "/" + filename;
@@ -309,6 +311,10 @@ void Materials::createPipeline()
     }
 
 
+    /// Another Pipeline
+    {
+
+    }
 
 }
 

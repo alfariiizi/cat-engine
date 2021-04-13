@@ -45,11 +45,11 @@ public:
                 uint32_t                        queueIndex,
                 vk::Queue                       queue );
     ~Graphics();
-    void draw( vk::CommandBuffer cmd, uint32_t imageIndex );
-    void loadObject();
+    void draw( vk::CommandBuffer cmd, uint32_t imageIndex, uint32_t frameNumber );
 
 private:
-    void giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::RenderPassBeginInfo& rpBeginInfo );
+    void giveCommand( vk::CommandBuffer& cmd, uint32_t& imageIndex, uint32_t& frameNumber, vk::RenderPassBeginInfo& rpBeginInfo );
+    void loadObject();
 
 private:
     const vk::ClearColorValue clearColorValue = vk::ClearColorValue{ std::array<float, 4U>{0.1f, 0.2f, 0.2f, 1.0f} };

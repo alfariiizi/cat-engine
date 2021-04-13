@@ -1,9 +1,13 @@
 #include "Graphics.hpp"
 #include "ShaderStruct.hpp"
 
+#include <glm/gtx/transform.hpp>
+
 #ifndef VMA_IMPLEMENTATION
   #define VMA_IMPLEMENTATION
 #endif
+
+typedef MeshPushConstants PushConstants;
 
 Graphics::Graphics(vk::PhysicalDevice physicalDevice,
                    vk::Device device,
@@ -49,6 +53,7 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
         });
     }
 
+    /// Load all object that want to draw
     loadObject();
 }
 
@@ -58,13 +63,7 @@ Graphics::~Graphics()
     std::cout << "Call Graphics Desctructor\n";
 }
 
-void Graphics::loadObject()
-{
-    ObjectDraw object{ &__triangleMesh, __material.pMaterial("triangle") };
-    __objectDraw.emplace_back( object );
-}
-
-void Graphics::draw(vk::CommandBuffer cmd, uint32_t imageIndex ) 
+void Graphics::draw( vk::CommandBuffer cmd, uint32_t imageIndex, uint32_t frameNumber ) 
 {
     cmd.begin( vk::CommandBufferBeginInfo{ vk::CommandBufferUsageFlagBits::eOneTimeSubmit} );
 
@@ -74,12 +73,6 @@ void Graphics::draw(vk::CommandBuffer cmd, uint32_t imageIndex )
     vk::Rect2D area;
     area.setOffset( vk::Offset2D{0, 0} );
     area.setExtent( __extent );
-    // auto renderpassBeginInfo = vk::RenderPassBeginInfo{
-    //     __renderpass,
-    //     __framebuffers[imageIndex],
-    //     area,
-    //     clearValues
-    // };
     
     auto renderpassbegInfo = vk::RenderPassBeginInfo{};
     renderpassbegInfo.setRenderPass( __renderpass );
@@ -88,13 +81,35 @@ void Graphics::draw(vk::CommandBuffer cmd, uint32_t imageIndex )
     renderpassbegInfo.setClearValues( clearValues );
 
     /// Giving Command
-    giveCommand( cmd, imageIndex, renderpassbegInfo );
+    giveCommand( cmd, imageIndex, frameNumber, renderpassbegInfo );
 }
 
-void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::RenderPassBeginInfo& rpBeginInfo ) 
+void Graphics::giveCommand( vk::CommandBuffer& cmd, uint32_t& imageIndex, uint32_t& frameNumber, vk::RenderPassBeginInfo& rpBeginInfo ) 
 {
     /// BEGIN GIVING GRAPHICS (DRAW) COMMAND
     cmd.beginRenderPass( rpBeginInfo, vk::SubpassContents::eInline );
+
+    /// Push Constants
+    PushConstants constants;
+    bool isPushConstants = false;
+    {
+        //make a model view matrix for rendering the object
+        //camera position
+        glm::vec3 camPos = { 0.f,0.f,-2.f };
+
+        glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+        //camera projection
+        glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+        projection[1][1] *= -1;
+        //model rotation
+        glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.4f), glm::vec3(0, 1, 0));
+
+        //calculate final mesh matrix
+        glm::mat4 mesh_matrix = projection * view * model;
+
+        constants.renderMatrix = std::move(mesh_matrix);
+        isPushConstants = true;
+    }
 
     /// RECORDING
     for( auto& object : __objectDraw )
@@ -104,6 +119,9 @@ void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::Rend
         {
             if( material )
             {
+                if( isPushConstants ) {
+                    cmd.pushConstants( material->layout(), vk::ShaderStageFlagBits::eVertex, 0, vk::ArrayProxy<const PushConstants>{ constants } );
+                }
                 cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, material->pipeline() );
             }
             if( mesh )
@@ -120,4 +138,18 @@ void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::Rend
 
     // END GIVING ALL KIND OF COMMANDS
     cmd.end();
+}
+
+void Graphics::loadObject()
+{
+    /// Triangle Object
+    {
+        ObjectDraw object{ &__triangleMesh, __material.pMaterial("triangle") };
+        __objectDraw.emplace_back( object );
+    }
+
+    /// Another Object
+    { 
+
+    }
 }

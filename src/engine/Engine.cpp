@@ -88,8 +88,9 @@ void Engine::draw()
     vk::Result result = __device.waitForFences( renderFence, VK_TRUE, UINT64_MAX );
     __device.resetFences( renderFence );
 
+    /// Drawing
     uint32_t imageIndex = __device.acquireNextImageKHR( __vulkanbase.swapchain(), UINT64_MAX, presentSemaphore, nullptr ).value;
-    __graphics.draw( cmd, imageIndex );
+    __graphics.draw( cmd, imageIndex, __frameNumber );
 
     /**
      * @brief Submit Info ( it could be graphics queue, compute queue, or maybe transfer queue )
