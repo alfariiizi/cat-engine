@@ -1,5 +1,7 @@
 #include "Window.hpp"
+
 #include <assert.h>
+#include <iostream>
 
 
 Window::Window() 
@@ -14,6 +16,7 @@ Window::~Window()
 {
     glfwDestroyWindow( _pWindow_ );
     glfwTerminate();
+    std::cout << "Call Window Desctructor\n";
 }
 
 // void Window::init() 

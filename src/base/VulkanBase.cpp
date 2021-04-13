@@ -7,8 +7,11 @@
 #include <GLFW/glfw3.h>
 
 #include "vku/vku.hpp"
-#include "utils.hpp"
+// #include "utils.hpp"
 
+#define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.hpp"
+#include "vma/vk_mem_alloc.h"
 
 VulkanBase::VulkanBase(Window& window) 
 {
@@ -76,19 +79,6 @@ VulkanBase::VulkanBase(Window& window)
         });
     }
 
-    { /// Allocator
-        vma::AllocatorCreateInfo allocatorInfo {};
-        allocatorInfo.setInstance( __pInstance.get() );
-        allocatorInfo.setPhysicalDevice( __physicalDevice );
-        allocatorInfo.setDevice( __pDevice.get() );
-        allocatorInfo.setVulkanApiVersion( VK_API_VERSION_1_1 );
-
-        __allocator = vma::createAllocator( allocatorInfo );
-        __delQueue.pushFunction( [&](){
-            __allocator.destroy();
-        });
-    }
-
     { /// Surface
         __surface = init::createSurfce( __pInstance.get(), window.getPWindow() );
         __delQueue.pushFunction([&](){
@@ -106,6 +96,19 @@ VulkanBase::VulkanBase(Window& window)
             __graphicsQueue = __pDevice->getQueue( graphicsIndices, 0 );
             __presentQueue = __pDevice->getQueue( presentIndices, 0 );
         }
+    }
+
+    { /// Allocator
+        vma::AllocatorCreateInfo allocatorInfo {};
+        allocatorInfo.setInstance( __pInstance.get() );
+        allocatorInfo.setPhysicalDevice( __physicalDevice );
+        allocatorInfo.setDevice( __pDevice.get() );
+        allocatorInfo.setVulkanApiVersion( VK_API_VERSION_1_1 );
+
+        __allocator = vma::createAllocator( allocatorInfo );
+        __delQueue.pushFunction( [&](){
+            __allocator.destroy();
+        });
     }
 
     { /// Swapchain
@@ -127,8 +130,8 @@ VulkanBase::VulkanBase(Window& window)
     { /// Renderpass
         __prpDepth = vku::DepthStencilImage{ __pDevice.get(), __physicalDevice.getMemoryProperties(), Window::ScreenWidth, Window::ScreenHeight };
         __delQueue.pushFunction( [&](){
-            auto image = std::move( __prpDepth.image() );
-            auto imageView = std::move( __prpDepth.imageView() );
+            auto image = __prpDepth.uniqueImage().release();
+            auto imageView = __prpDepth.uniqueImageView().release();
             __pDevice->destroyImageView( imageView );
             __pDevice->destroyImage( image );
         });
@@ -216,7 +219,7 @@ VulkanBase::VulkanBase(Window& window)
             fbInfo.setHeight( Window::ScreenHeight );
             fbInfo.setLayers( 1 );
 
-            __rpFramebuffers.emplace_back( __pDevice->createFramebufferUnique( fbInfo ) );
+            __rpFramebuffers.emplace_back( __pDevice->createFramebuffer( fbInfo ) );
         }
         __delQueue.pushFunction([d=__pDevice.get(), fbs=__rpFramebuffers](){
             for( auto& fb : fbs )
@@ -228,6 +231,7 @@ VulkanBase::VulkanBase(Window& window)
 VulkanBase::~VulkanBase() 
 {
     __delQueue.flush();
+    std::cout << "Call VulkanBase Desctructor\n";
     // __pInstance->destroySurfaceKHR( __surface );
     // debugutils::DestroyDebugUtilsMessengerEXT( 
     //     static_cast<VkInstance>( __pInstance.get() ), static_cast<VkDebugUtilsMessengerEXT>( __debugUtilsMessenger ), nullptr

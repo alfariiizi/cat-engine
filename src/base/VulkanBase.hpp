@@ -10,10 +10,17 @@
 
 #define MAX_FRAME 2
 
-struct Queue
+class Queue
 {
-    vk::Queue _graphics;
-    vk::Queue _present;
+public:
+    Queue() = default;
+    Queue( const vk::Queue& graphicsQueue, const vk::Queue& presentQueue ) : __graphics( graphicsQueue ), __present( presentQueue ) {};
+    vk::Queue graphicsQueue() { return __graphics; };
+    vk::Queue presentQueue() { return __present; };
+
+private:
+    vk::Queue __graphics;
+    vk::Queue __present;
 };
 
 class VulkanBase
@@ -37,7 +44,7 @@ public:
     vk::PhysicalDevice              physicalDevice() const      { return __physicalDevice; };
     vk::Device                      device() const              { return __pDevice.get(); };
     vk::SurfaceKHR                  surface() const             { return __surface; };
-    Queue                           graphicsPresentQueue()      { return { __graphicsQueue, __presentQueue }; };
+    Queue                           graphicsPresentQueue()      { return Queue{ __graphicsQueue, __presentQueue }; };
     vk::SwapchainKHR                swapchain() const           { return __swapchain; };
     vk::Format                      swapchainFormat() const     { return __scFormat; };
     std::vector<vk::Image>          swapchainImages() const     { return __scImages; };

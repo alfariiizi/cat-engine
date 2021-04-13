@@ -1,6 +1,6 @@
 [submodule "external/Vookoo"]
 	path = external/Vookoo
-	url = https://github.com/andy-thomason/Vookoo.git
+	url = https://github.com/alfariiizi/Vookoo.git
 [submodule "external/glfw"]
 	path = external/glfw
 	url = https://github.com/glfw/glfw.git

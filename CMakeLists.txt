@@ -21,8 +21,8 @@ add_executable( ${PROJECT_NAME}
     src/graphics/Material.cpp
     src/graphics/Mesh.cpp
 #utils
-    src/utils/math.cpp
-    src/utils/utils.cpp
+    # src/utils/math.cpp
+    # src/utils/utils.cpp
 #window
     src/window/Window.cpp
 )
@@ -34,7 +34,7 @@ target_include_directories( ${PROJECT_NAME}
         src/engine/
         src/graphics/
         src/window/
-        src/utils/
+        # src/utils/
 )
 
 target_link_libraries( ${PROJECT_NAME}

@@ -14,7 +14,7 @@ class Engine
 {
 public:
     Engine();
-    ~Engine();
+    // ~Engine();
     void init();
     void draw();
     void loop();
@@ -23,14 +23,14 @@ public:
 private:
     struct Synchronous
     {
-        vk::UniqueSemaphore _presentSemaphore;
-        vk::UniqueSemaphore _renderSemaphore;
-        vk::UniqueFence     _renderFence;
+        vk::Semaphore _presentSemaphore;
+        vk::Semaphore _renderSemaphore;
+        vk::Fence     _renderFence;
     };
     struct Command
     {
-        vk::UniqueCommandPool   _pCmdPool;
-        vk::UniqueCommandBuffer _pCmdBuffer;
+        vk::CommandPool   _cmdPool;
+        vk::CommandBuffer _cmdBuffer;
     };
 
 private:
@@ -41,7 +41,6 @@ private:
     Graphics                                __graphics;
     uint32_t                                __frameNumber           = 0;
     uint32_t                                __frameInUse            = 0;
-    vma::Allocator                          __allocator;
     DeletionQueue                           __delQueue;
 
 private:

@@ -12,6 +12,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL
                                 VkDebugUtilsMessengerCallbackDataEXT const * pCallbackData,
                                 void * /*pUserData*/ )
 {
+    std::cerr << "\n\n";
+
     std::cerr << vk::to_string( static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>( messageSeverity ) ) << ": "
             << vk::to_string( static_cast<vk::DebugUtilsMessageTypeFlagsEXT>( messageTypes ) ) << ":\n";
     std::cerr << "\t"
@@ -60,7 +62,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL
         }
     }
 
-    std::cerr << "\n\n";
     }
     return VK_TRUE;
 }

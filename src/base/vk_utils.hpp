@@ -10,11 +10,11 @@
 //     vk::Image _image;
 // };
 
-struct Buffer
-{
-    vma::Allocation _memory;
-    vk::Buffer _buffer;
-};
+// struct Buffer
+// {
+//     vma::Allocation _memory;
+//     vk::Buffer _buffer;
+// };
 
 namespace utils
 {

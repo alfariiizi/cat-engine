@@ -7,7 +7,7 @@
 #include "stb/stb_image.h"
 
 
-Material::Material(vk::PhysicalDevice      physicalDevice, 
+Materials::Materials(vk::PhysicalDevice      physicalDevice, 
                 vk::Device              device, 
                 vk::RenderPass          renderpass, 
                 uint32_t                queueIndex, 
@@ -69,12 +69,13 @@ Material::Material(vk::PhysicalDevice      physicalDevice,
     createPipeline();
 }
 
-Material::~Material() 
+Materials::~Materials() 
 {
     __delQueue.flush();
+    std::cout << "Call Material Desctructor\n";
 }
 
-Pipeline* Material::getPipeline( const std::string& name )
+Pipeline* Materials::getPipeline( const std::string& name )
 {
     auto result = __pipelines.find( name );
     if( result == __pipelines.end() )
@@ -83,7 +84,7 @@ Pipeline* Material::getPipeline( const std::string& name )
     return &result->second;
 }
 
-Descriptor* Material::getDescriptor( const std::string& name )
+Descriptor* Materials::getDescriptor( const std::string& name )
 {
     auto result = __descriptors.find( name );
     if( result == __descriptors.end() )
@@ -92,7 +93,7 @@ Descriptor* Material::getDescriptor( const std::string& name )
     return &result->second;
 }
 
-// void Material::destroy() 
+// void Materials::destroy() 
 // {
 //     assert( _isInitialized_ );
 
@@ -109,7 +110,7 @@ Descriptor* Material::getDescriptor( const std::string& name )
 //     _stillExist_ = false;
 // }
 
-// void Material::loadTexture() 
+// void Materials::loadTexture() 
 // {
 //     /// BRICK WALL
 //     {
@@ -144,7 +145,7 @@ Descriptor* Material::getDescriptor( const std::string& name )
 // }
 
 
-// void Material::basicTexturedPipeline() 
+// void Materials::basicTexturedPipeline() 
 // {
 //     /// State (FIX)
 //     State state;
@@ -229,18 +230,27 @@ Descriptor* Material::getDescriptor( const std::string& name )
 //     _s_.emplace_back( std::move(state) );
 // }
 
+Material* Materials::pMaterial(const std::string& name) 
+{
+    auto success = __loadedMaterials.find( name );
+    if( success == __loadedMaterials.end() )
+        return nullptr;
+    
+    return &(success->second);
+}
 
-void Material::createTexture() 
+
+void Materials::createTexture() 
 {
     
 }
 
-void Material::createDescriptorSet() 
+void Materials::createDescriptorSet() 
 {
     
 }
 
-void Material::createPipeline() 
+void Materials::createPipeline() 
 {
     /**
      * @brief Triangle
@@ -276,13 +286,16 @@ void Material::createPipeline()
 
 
         /// Pipeline State (CHANGEABLE)
+        auto vertexDescription = Vertex::SimpleVertex::getVertexInputDescription();
         {
             // Depth
             plm.depthTestEnable( VK_TRUE ).depthWriteEnable( VK_TRUE );
 
-            plm.vertexBinding( 0, sizeof(Vertex::SimpleVertex), vk::VertexInputRate::eVertex );
-            plm.vertexAttribute( 0, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex::SimpleVertex, position) );
-            plm.vertexAttribute( 1, 0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex::SimpleVertex, color) );
+            // Vertex Description
+            for( auto& binding : vertexDescription.bindings )
+                plm.vertexBinding( binding );
+            for( auto& attribute : vertexDescription.attributs )
+                plm.vertexAttribute( attribute );
         }
 
         /// Create the pipeline (FIX)
@@ -292,14 +305,14 @@ void Material::createPipeline()
         });
 
         /// Naming the pipeline (CHANGEABLE)
-        __pipelines["triangle"] = { pipeline, pipelineLayout };
+        __loadedMaterials["triangle"] = { pipeline, pipelineLayout };
     }
 
 
 
 }
 
-bool Material::loadTexture(std::string filename, std::string textureName, ImageUsedFor usedFor) 
+bool Materials::loadTexture(std::string filename, std::string textureName, ImageUsedFor usedFor) 
 {
     /// Loading the texture (FIX)
     bool isSuccess = false;
@@ -320,7 +333,7 @@ bool Material::loadTexture(std::string filename, std::string textureName, ImageU
     return isSuccess;
 }
 
-bool Material::loadImageFromFile( const std::string& filename, vku::GenericImage* image, ImageUsedFor usedFor ) 
+bool Materials::loadImageFromFile( const std::string& filename, vku::GenericImage* image, ImageUsedFor usedFor ) 
 {
     // assert( _isInitialized_ );
 

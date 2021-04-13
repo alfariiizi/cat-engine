@@ -191,6 +191,11 @@ vk::UniqueSwapchainKHR init::createSwapchain( const vk::PhysicalDevice& physical
     return device.createSwapchainKHRUnique( swapchainInfo );
 }
 
+vk::SwapchainKHR init::createSwapchainRaw ( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent )
+{
+    return init::createSwapchain( physicalDevice, device, surface, windowExtent ).release();
+}
+
 void init::swapchainImageAndImageViews( const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat,std::vector<vk::Image>& outSwapchainImages, std::vector<vk::UniqueImageView>& outSwapchainImageViews )
 {
     outSwapchainImages = device.getSwapchainImagesKHR( swapchain );
@@ -221,7 +226,7 @@ void init::swapchainImageAndImageViews( const vk::Device& device, const vk::Swap
     }
 }
 
-void swapchainImageAndImageViews(const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat, std::vector<vk::Image>& outSwapchainImages, std::vector<vk::ImageView>& outSwapchainImageViews) 
+void init::swapchainImageAndImageViews(const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat, std::vector<vk::Image>& outSwapchainImages, std::vector<vk::ImageView>& outSwapchainImageViews) 
 {
     outSwapchainImages = device.getSwapchainImagesKHR( swapchain );
     outSwapchainImageViews.reserve( outSwapchainImages.size() );
@@ -247,7 +252,7 @@ void swapchainImageAndImageViews(const vk::Device& device, const vk::SwapchainKH
                 1       // layer count
             }
         };
-        outSwapchainImageViews.emplace_back( device.createImageViewUnique( imageViewInfo ) );
+        outSwapchainImageViews.emplace_back( device.createImageView( imageViewInfo ) );
     }
 }
 

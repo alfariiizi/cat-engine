@@ -6,37 +6,41 @@
 #include "ShaderStruct.hpp"
 #include "DeletionQueue.hpp"
 
-template<typename T>
+typedef Vertex::SimpleVertex vertex0;
+
+// template<typename T>
 class Mesh
 {
 public:
-    // Mesh() = default;
-    // Mesh ( const std::vector<Vertex::SimpleVertex>& vertex, 
-    //        const vk::BufferCreateInfo& bufferInfo, 
-    //        const vma::AllocationCreateInfo& allocInfo, 
-    //        const vma::Allocator* pAllocator = nullptr )
-    // {
-    //     __vertices = vertex;
+    Mesh() = default;
+    Mesh ( const std::vector<vertex0>& vertex, 
+           const vk::BufferCreateInfo& bufferInfo, 
+           const vma::AllocationCreateInfo& allocInfo, 
+           const vma::Allocator* pAllocator = nullptr )
+    {
+        __vertices = vertex;
 
-    //     if( pAllocator )
-    //     {
-    //         __buffer.createBuffer( *pAllocator, bufferInfo, allocInfo );
-    //         allocateMesh( *pAllocator );
-    //     }
-    // }
-    // void allocateMesh( const vma::Allocator& allocator )
-    // {
-    //     // void* ptr = allocator.mapMemory( _buffer.allocation() );
-    //     // memcpy( ptr, _vertices.data(), _vertices.size() * sizeof(T) );
-    //     // allocator.unmapMemory( _buffer.allocation() );
-    // }
+        if( pAllocator )
+        {
+            __buffer.createBuffer( *pAllocator, bufferInfo, allocInfo );
+            allocateMesh( *pAllocator );
+        }
+    }
+    void allocateMesh( const vma::Allocator& allocator )
+    {
+        void* ptr = allocator.mapMemory( __buffer.allocation() );
+        memcpy( ptr, __vertices.data(), __vertices.size() * sizeof(vertex0) );
+        allocator.unmapMemory( __buffer.allocation() );
+    }
     Buffer& buffer() { return __buffer; };
-    std::vector<Vertex::SimpleVertex>& vertices() { return __vertices; };
+    std::vector<vertex0>& vertices() { return __vertices; };
     // int& ID() { return __ID; };
 
 private:
     Buffer __buffer;
-    std::vector<T> __vertices;
+    // std::vector<void*> __vertices;
+    std::vector<vertex0> __vertices;
+    void* __structPtr;
     // int __ID;
 };
 
@@ -48,8 +52,6 @@ public:
     Meshes() {};
     void loadAllMeshes()
     {
-
-
         /// Meshes 1
         {
 
@@ -77,7 +79,7 @@ public:
     }
 
     template<typename T>
-    void regToAlloc( Mesh<T> mesh )
+    void regToAlloc( Mesh mesh )
     {
         _allocations.emplace_back( mesh.buffer().allocation() );
         _trackers.emplace_back( std::make_pair<int, int>( IDs++, sizeof(T) ) );
@@ -87,8 +89,6 @@ public:
     }
 
 public:
-    // Mesh<Vertex::SimpleVertex> __simpleVertex;
-    // Mesh _simpleVertex;
     std::vector<vma::Allocation> _allocations;
     std::vector<std::pair<int, int>> _trackers;  // first == ID, second == sizeof(type)
     int IDs = 0;

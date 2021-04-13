@@ -14,7 +14,7 @@ vk::PhysicalDevice  pickPhysicalDevice              ( const vk::Instance& instan
 // Unique
 vk::UniqueDevice        createDevice                    ( const vk::PhysicalDevice& physicalDevice, const vk::SurfaceKHR& surface );   
 vk::UniqueSwapchainKHR  createSwapchain                 ( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent );
-vk::SwapchainKHR        createSwapchainRaw                 ( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent ) { return createSwapchain( physicalDevice, device, surface, windowExtent ).release(); }
+vk::SwapchainKHR        createSwapchainRaw              ( const vk::PhysicalDevice& physicalDevice, const vk::Device& device, const vk::SurfaceKHR& surface, vk::Extent2D windowExtent );
 void                    swapchainImageAndImageViews ( const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat, std::vector<vk::Image>& outSwapchainImages, std::vector<vk::UniqueImageView>& outSwapchainImageViews );
 void                    swapchainImageAndImageViews ( const vk::Device& device, const vk::SwapchainKHR& swapchain, vk::Format swapchainFormat, std::vector<vk::Image>& outSwapchainImages, std::vector<vk::ImageView>& outSwapchainImageViews );
 

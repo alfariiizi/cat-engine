@@ -1,8 +1,13 @@
 #include "Graphics.hpp"
 #include "ShaderStruct.hpp"
 
+#ifndef VMA_IMPLEMENTATION
+  #define VMA_IMPLEMENTATION
+#endif
+
 Graphics::Graphics(vk::PhysicalDevice physicalDevice,
                    vk::Device device,
+                   vma::Allocator allocator,
                    vk::RenderPass rp,
                    std::vector<vk::Framebuffer> fbs,
                    const vk::Extent2D &extent,
@@ -11,6 +16,7 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
     :
     __physicalDevice( physicalDevice ),
     __device( device ),
+    __allocator( allocator ),
     __renderpass( rp ),
     __framebuffers( fbs ),
     __extent( extent ),
@@ -18,15 +24,45 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
     __queue( queue ),
     __material( physicalDevice, device, rp, queueIndex, queue, extent.width, extent.height )
 {
-    // vertBuffer = vku::VertexBuffer{ device, physicalDevice.getMemoryProperties(), sizeof(Texture_Vertex) * vertices.size() };
-    vertBuffer = vku::HostVertexBuffer{ __device, __physicalDevice.getMemoryProperties(), vertices };
+    {
+        std::vector<Vertex::SimpleVertex> vertices( 3 );
+        vertices[0].position = { 0.5f, -0.5f, 0.0f };
+        vertices[1].position = { -0.5f, -0.5f, 0.0f };
+        vertices[2].position = { 0.0f, 0.5f, 0.0f };
+        vertices[0].color = { 1.0f, 0.0f, 0.0f };
+        vertices[1].color = { 0.0f, 1.0f, 0.0f };
+        vertices[2].color = { 0.0f, 0.0f, 1.0f };
+
+        vk::BufferCreateInfo bufferInfo {};
+        bufferInfo.setSize( vertices.size() * sizeof(Vertex::SimpleVertex) );
+        bufferInfo.setUsage( vk::BufferUsageFlagBits::eVertexBuffer );
+        // bufferInfo.setQueueFamilyIndices( __queueFamilyIndex );
+        // bufferInfo.setSharingMode( vk::SharingMode::eExclusive );
+
+        vma::AllocationCreateInfo allocInfo {};
+        allocInfo.setUsage( vma::MemoryUsage::eCpuToGpu );
+
+        __triangleMesh = Mesh( std::move(vertices), bufferInfo, allocInfo, &__allocator );
+        __delQueue.pushFunction([&](){
+            auto buffer = __triangleMesh.buffer();
+            __allocator.destroyBuffer( buffer.buffer(), buffer.allocation() );
+        });
+    }
+
+    loadObject();
 }
 
 Graphics::~Graphics() 
 {
     __delQueue.flush();
+    std::cout << "Call Graphics Desctructor\n";
 }
 
+void Graphics::loadObject()
+{
+    ObjectDraw object{ &__triangleMesh, __material.pMaterial("triangle") };
+    __objectDraw.emplace_back( object );
+}
 
 void Graphics::draw(vk::CommandBuffer cmd, uint32_t imageIndex ) 
 {
@@ -61,12 +97,22 @@ void Graphics::giveCommand( vk::CommandBuffer cmd, uint32_t imageIndex, vk::Rend
     cmd.beginRenderPass( rpBeginInfo, vk::SubpassContents::eInline );
 
     /// RECORDING
-    auto pipeline = __material.getPipeline("triangle");
+    for( auto& object : __objectDraw )
     {
-        cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, pipeline->_pipeline );
-        cmd.bindVertexBuffers( 0, vertBuffer.buffer(), vk::DeviceSize{0} );
-        // cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, it_material->_layout, 0, it_material->_set, nullptr );
-        cmd.draw( vertices.size(), 1, 0, 0 );
+        auto material = object.pMaterial();
+        auto mesh = object.pMesh();
+        {
+            if( material )
+            {
+                cmd.bindPipeline( vk::PipelineBindPoint::eGraphics, material->pipeline() );
+            }
+            if( mesh )
+            {
+                cmd.bindVertexBuffers( 0, mesh->buffer().buffer(), vk::DeviceSize{0} );
+                cmd.draw( mesh->vertices().size(), 1, 0, 0 );
+            }
+            // cmd.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, it_material->_layout, 0, it_material->_set, nullptr );
+        }
     }
 
     /// END GIVING GRAPHICS (DRAW) COMMAND

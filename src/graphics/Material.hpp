@@ -21,6 +21,20 @@ struct Descriptor
 class Material
 {
 public:
+    Material() = default;
+    Material( const vk::Pipeline& pipeline, const vk::PipelineLayout& layout ) : __pipeline( pipeline ), __layout( layout ) {};
+    vk::Pipeline pipeline() { return __pipeline; };
+    vk::PipelineLayout layout() { return __layout; };
+
+private:
+    vk::Pipeline __pipeline;
+    vk::PipelineLayout __layout;
+    // vk::DescriptorSetLayout __setLayout;
+    vk::DescriptorSet __set;
+};
+class Materials
+{
+public:
     enum class ImageUsedFor
     {
         TEXTURE_2D,
@@ -45,18 +59,19 @@ public:
     // };
 
 public:
-    Material(   vk::PhysicalDevice      physicalDevice, 
+    Materials(   vk::PhysicalDevice      physicalDevice, 
                 vk::Device              device, 
                 vk::RenderPass          renderpass, 
                 uint32_t                queueIndex, 
                 vk::Queue               queue, 
                 uint32_t                width, 
                 uint32_t                height );
-    ~Material();
+    ~Materials();
     // void init( vk::PhysicalDevice physicalDevice, vk::Device device, vk::RenderPass renderpass, uint32_t queueIndex, vk::Queue queue, uint32_t width, uint32_t height );
     void destroy();
     // void loadTexture();
     void basicTexturedPipeline();
+    Material* pMaterial( const std::string& name );
 
 public:
     Pipeline* getPipeline( const std::string& name );
@@ -83,6 +98,8 @@ private:
     std::unordered_map<std::string, Pipeline> __pipelines;
     std::unordered_map<std::string, Descriptor> __descriptors;
 
+private:
+    std::unordered_map<std::string, Material> __loadedMaterials;
 
     std::string __vertexShaderPath;
     std::string __fragmentShaderPath;
