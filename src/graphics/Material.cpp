@@ -1,4 +1,3 @@
-#define PUSH_CONSTANT
 #include "Material.hpp"
 #include <stdio.h>
 

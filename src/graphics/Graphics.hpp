@@ -2,10 +2,10 @@
 
 #include <vulkan/vulkan.hpp>
 #include "DeletionQueue.hpp"
-#include "ShaderStruct.hpp"
 #include "Material.hpp"
 #include "Mesh.hpp"
 
+#include "ShaderStruct.hpp"
 
 /**
  * Idk, but maybe it'll use other class such as Material, Buffer, Image, Descriptor, Mesh, etc. (each 'll be an array)
@@ -62,6 +62,10 @@ private:
     /// just for testing
 private:
     Mesh __triangleMesh;
+    Mesh __monkey;
+
+private:
+    std::string __assetsPath;
 
     /* Depend */
 private:

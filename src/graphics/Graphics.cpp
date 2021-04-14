@@ -1,5 +1,4 @@
 #include "Graphics.hpp"
-#include "ShaderStruct.hpp"
 
 #include <glm/gtx/transform.hpp>
 
@@ -28,6 +27,8 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
     __queue( queue ),
     __material( physicalDevice, device, rp, queueIndex, queue, extent.width, extent.height )
 {
+    std::string path = getenv( "PWD" );
+    __assetsPath = path + "/../assets/";
     {
         std::vector<Vertex::SimpleVertex> vertices( 3 );
         vertices[0].position = { 0.5f, -0.5f, 0.0f };
@@ -49,6 +50,23 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
         __triangleMesh = Mesh( std::move(vertices), bufferInfo, allocInfo, &__allocator );
         __delQueue.pushFunction([&](){
             auto buffer = __triangleMesh.buffer();
+            __allocator.destroyBuffer( buffer.buffer(), buffer.allocation() );
+        });
+    }
+    {
+        Mesh mesh;
+        obj::loadFromObj( __assetsPath + "Luke_skywalkers_landspeeder/Luke Skywalkers landspeeder.obj", mesh );
+       
+        vk::BufferCreateInfo bufferInfo {};
+        bufferInfo.setSize( mesh.vertices().size() * sizeof(vertex0) );
+        bufferInfo.setUsage( vk::BufferUsageFlagBits::eVertexBuffer );
+
+        vma::AllocationCreateInfo allocInfo {};
+        allocInfo.setUsage( vma::MemoryUsage::eCpuToGpu );
+
+        __monkey = Mesh( mesh.vertices(), bufferInfo, allocInfo, &__allocator );
+        __delQueue.pushFunction( [&](){
+            auto buffer = __monkey.buffer();
             __allocator.destroyBuffer( buffer.buffer(), buffer.allocation() );
         });
     }
@@ -150,6 +168,7 @@ void Graphics::loadObject()
 
     /// Another Object
     { 
-
+        ObjectDraw object{ &__monkey, __material.pMaterial("triangle") };
+        __objectDraw.emplace_back( object );
     }
 }

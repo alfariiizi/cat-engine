@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <iostream>
 
 #include "AllocatedBuffer.hpp"
 #include "ShaderStruct.hpp"
@@ -97,3 +98,9 @@ private:
     vma::Allocator __allocator;
     DeletionQueue __delQueue;
 };
+
+
+namespace obj
+{
+bool loadFromObj( const std::string& fileName, Mesh& mesh );
+}
