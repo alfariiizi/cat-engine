@@ -29,6 +29,19 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
 {
     std::string path = getenv( "PWD" );
     __assetsPath = path + "/../assets/";
+
+    /// Create Command Pool for One time submit cmdBuffer
+    {
+        auto poolInfo = vk::CommandPoolCreateInfo {
+            vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            queueIndex
+        };
+        __cmdPool = __device.createCommandPool( poolInfo );
+        __delQueue.pushFunction([&](){
+            __device.destroyCommandPool( __cmdPool );
+        });
+    }
+
     {
         std::vector<Vertex::SimpleVertex> vertices( 3 );
         vertices[0].position = { 0.5f, -0.5f, 0.0f };
@@ -45,26 +58,28 @@ Graphics::Graphics(vk::PhysicalDevice physicalDevice,
         // bufferInfo.setSharingMode( vk::SharingMode::eExclusive );
 
         vma::AllocationCreateInfo allocInfo {};
-        allocInfo.setUsage( vma::MemoryUsage::eCpuToGpu );
+        allocInfo.setUsage( vma::MemoryUsage::eGpuOnly );
 
-        __triangleMesh = Mesh( std::move(vertices), bufferInfo, allocInfo, &__allocator );
+        __triangleMesh = Mesh( __device, __cmdPool, __queue, std::move(vertices), bufferInfo, allocInfo, &__allocator );
         __delQueue.pushFunction([&](){
             auto buffer = __triangleMesh.buffer();
             __allocator.destroyBuffer( buffer.buffer(), buffer.allocation() );
         });
     }
+
+    /// Create All the Meshes ( actually, it's still just monkey :) )
     {
         Mesh mesh;
-        obj::loadFromObj( __assetsPath + "Luke_skywalkers_landspeeder/Luke Skywalkers landspeeder.obj", mesh );
-       
+        obj::loadFromObj( __assetsPath + "monkey_smooth.obj", mesh );
+
         vk::BufferCreateInfo bufferInfo {};
         bufferInfo.setSize( mesh.vertices().size() * sizeof(vertex0) );
         bufferInfo.setUsage( vk::BufferUsageFlagBits::eVertexBuffer );
 
         vma::AllocationCreateInfo allocInfo {};
-        allocInfo.setUsage( vma::MemoryUsage::eCpuToGpu );
+        allocInfo.setUsage( vma::MemoryUsage::eGpuOnly );
 
-        __monkey = Mesh( mesh.vertices(), bufferInfo, allocInfo, &__allocator );
+        __monkey = Mesh( __device, __cmdPool, __queue, std::move(mesh.vertices()), bufferInfo, allocInfo, &__allocator );
         __delQueue.pushFunction( [&](){
             auto buffer = __monkey.buffer();
             __allocator.destroyBuffer( buffer.buffer(), buffer.allocation() );
@@ -107,33 +122,37 @@ void Graphics::giveCommand( vk::CommandBuffer& cmd, uint32_t& imageIndex, uint32
     /// BEGIN GIVING GRAPHICS (DRAW) COMMAND
     cmd.beginRenderPass( rpBeginInfo, vk::SubpassContents::eInline );
 
-    /// Push Constants
-    PushConstants constants;
-    bool isPushConstants = false;
-    {
-        //make a model view matrix for rendering the object
-        //camera position
-        glm::vec3 camPos = { 0.f,0.f,-2.f };
-
-        glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-        //camera projection
-        glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-        projection[1][1] *= -1;
-        //model rotation
-        glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.4f), glm::vec3(0, 1, 0));
-
-        //calculate final mesh matrix
-        glm::mat4 mesh_matrix = projection * view * model;
-
-        constants.renderMatrix = std::move(mesh_matrix);
-        isPushConstants = true;
-    }
 
     /// RECORDING
     for( auto& object : __objectDraw )
     {
         auto material = object.pMaterial();
         auto mesh = object.pMesh();
+        auto transform = object.transformMatrix();
+
+        /// Push Constants
+        PushConstants constants;
+        bool isPushConstants = false;
+        {
+            //make a model view matrix for rendering the object
+            //camera position
+            glm::vec3 camPos = { 0.f,0.f,-2.f };
+
+            glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+            //camera projection
+            glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+            projection[1][1] *= -1;
+            //model rotation
+            // glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(frameNumber * 0.4f), glm::vec3(0, 1, 0));
+            glm::mat4 model = transform;
+
+            //calculate final mesh matrix
+            glm::mat4 mesh_matrix = projection * view * model;
+
+            constants.renderMatrix = std::move(mesh_matrix);
+            isPushConstants = true;
+        }
+
         {
             if( material )
             {
@@ -160,15 +179,23 @@ void Graphics::giveCommand( vk::CommandBuffer& cmd, uint32_t& imageIndex, uint32
 
 void Graphics::loadObject()
 {
-    /// Triangle Object
-    {
-        ObjectDraw object{ &__triangleMesh, __material.pMaterial("triangle") };
+    /// Monkey Object
+    { 
+        ObjectDraw object{ &__monkey, __material.pMaterial("triangle"), glm::mat4( 1 ) };
         __objectDraw.emplace_back( object );
     }
 
-    /// Another Object
-    { 
-        ObjectDraw object{ &__monkey, __material.pMaterial("triangle") };
-        __objectDraw.emplace_back( object );
+    /// Triangle Object
+    {
+        for( int x = -20; x <= 20; ++x ) {
+            for( int y = -20; y <= 20; ++y ) {
+                glm::mat4 translation = glm::translate( glm::mat4{ 1.0f }, glm::vec3{ x, 0, y } );
+                glm::mat4 scale = glm::scale( glm::mat4{ 1.0f }, glm::vec3{ 0.2f, 0.2f, 0.2f } );
+                ObjectDraw object{ &__triangleMesh, __material.pMaterial("triangle"), translation * scale };
+
+                __objectDraw.emplace_back( object );
+            }
+        }
     }
+
 }
