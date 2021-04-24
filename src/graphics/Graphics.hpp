@@ -16,13 +16,15 @@ class ObjectDraw
 {
 public:
     ObjectDraw() = default;
-    ObjectDraw( Mesh* mesh, Material* material ) : __mesh( mesh ), __material( material ) {};
+    ObjectDraw( Mesh* mesh, Material* material, glm::mat4 transformMatrix ) : __mesh( mesh ), __material( material ), __transformMatrix( transformMatrix ) {};
     Mesh* pMesh() { return __mesh; };
     Material* pMaterial() { return __material; };
+    glm::mat4 transformMatrix() { return __transformMatrix; };
 
 private:
     Mesh* __mesh;
     Material* __material;
+    glm::mat4 __transformMatrix;
 };
 
 
@@ -66,6 +68,7 @@ private:
 
 private:
     std::string __assetsPath;
+    vk::CommandPool __cmdPool; // Command Pool for one time submit cmdbuffer
 
     /* Depend */
 private:
