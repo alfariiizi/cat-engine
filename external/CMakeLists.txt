@@ -1,27 +1,29 @@
-# add_subdirectory( Vookoo )
-add_subdirectory( glfw )
+# cmake_minimum_required( VERSION 3.16 )
 
-target_link_directories( ${CMAKE_PROJECT_NAME}
-    PUBLIC
-        external/glfw/src/
-)
+# # add_subdirectory( Vookoo )
+# # add_subdirectory( glfw )
 
-target_link_libraries( ${CMAKE_PROJECT_NAME}
-    PUBLIC
-        glfw
-)
+# # target_link_directories( main-exec
+# #     PUBLIC
+# #         external/glfw/src/
+# # )
 
-# Vookoo and VMA
-target_include_directories( ${CMAKE_PROJECT_NAME} 
-    PUBLIC
-        # Vookoo/external/andyzip
-        # Vookoo/external/gilgamesh
-        # Vookoo/external/glfw/include
-        # Vookoo/external/glm
-        # Vookoo/external/shaderc
-        # Vookoo/external/stb
-        Vookoo/include/
-        VulkanMemoryAllocator-Hpp/
-        stb/include/
-        tinyobjloader/
-)
+# # target_link_libraries( main-exec
+# #     PUBLIC
+# #         glfw
+# # )
+
+# # Vookoo and VMA
+# target_include_directories( main-exec
+#     PUBLIC
+#         # Vookoo/external/andyzip
+#         # Vookoo/external/gilgamesh
+#         # Vookoo/external/glfw/include
+#         # Vookoo/external/glm
+#         # Vookoo/external/shaderc
+#         # Vookoo/external/stb
+#         Vookoo/include/
+#         VulkanMemoryAllocator-Hpp/
+#         stb/include/
+#         tinyobjloader/
+# )
