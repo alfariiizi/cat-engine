@@ -6,20 +6,21 @@ add_library( vk-base
     VulkanBase.cpp
     vk_utils.cpp
     vk_init.cpp
+    Window.cpp
 )
 
 target_link_libraries( vk-base 
     PUBLIC
         vulkan
         glfw
-        misscell
+        # misscell
 )
 
 target_include_directories( vk-base
     PUBLIC
 
         # vk-base header directory
-            ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}
 
         # external directory
         ${external-path}/Vookoo/include
