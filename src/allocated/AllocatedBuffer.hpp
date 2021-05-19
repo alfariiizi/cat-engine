@@ -25,3 +25,15 @@ private:
     vma::Allocation __allocation;
     vk::Buffer __buffer;
 };
+
+class Buffer_d  // this is buffer for descriptor set
+{
+public:
+    Buffer_d(  ){
+
+    }
+
+private:
+    Buffer __buffer;
+    vk::DescriptorSet __set;
+};

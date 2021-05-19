@@ -32,39 +32,39 @@ Materials::Materials(vk::PhysicalDevice      physicalDevice,
     __assetsPath = sourceWorkspace;
     __assetsPath.append( "/assets/" );
 
-    { /// Command Pool
-        vk::CommandPoolCreateInfo poolInfo {};
-        poolInfo.setQueueFamilyIndex( queueIndex );
-        poolInfo.setFlags( vk::CommandPoolCreateFlagBits::eResetCommandBuffer );
+    // { /// Command Pool
+    //     vk::CommandPoolCreateInfo poolInfo {};
+    //     poolInfo.setQueueFamilyIndex( queueIndex );
+    //     poolInfo.setFlags( vk::CommandPoolCreateFlagBits::eResetCommandBuffer );
 
-        __pCommandPool = __device.createCommandPoolUnique( poolInfo );
-    }
+    //     __pCommandPool = __device.createCommandPoolUnique( poolInfo );
+    // }
 
-    { /// Descriptor Pool
-        std::vector<vk::DescriptorPoolSize> sizes = {
-            { vk::DescriptorType::eCombinedImageSampler, 100U },
-            { vk::DescriptorType::eSampledImage, 100U },
-            { vk::DescriptorType::eSampler, 100U },
-            { vk::DescriptorType::eStorageBuffer, 100U },
-            { vk::DescriptorType::eStorageBufferDynamic, 100U },
-            { vk::DescriptorType::eStorageImage, 100U },
-            { vk::DescriptorType::eStorageTexelBuffer, 100U },
-            { vk::DescriptorType::eUniformBuffer, 100U },
-            { vk::DescriptorType::eUniformBufferDynamic, 100U },
-            { vk::DescriptorType::eUniformTexelBuffer, 100U },
-        };
+    // { /// Descriptor Pool
+    //     std::vector<vk::DescriptorPoolSize> sizes = {
+    //         { vk::DescriptorType::eCombinedImageSampler, 100U },
+    //         { vk::DescriptorType::eSampledImage, 100U },
+    //         { vk::DescriptorType::eSampler, 100U },
+    //         { vk::DescriptorType::eStorageBuffer, 100U },
+    //         { vk::DescriptorType::eStorageBufferDynamic, 100U },
+    //         { vk::DescriptorType::eStorageImage, 100U },
+    //         { vk::DescriptorType::eStorageTexelBuffer, 100U },
+    //         { vk::DescriptorType::eUniformBuffer, 100U },
+    //         { vk::DescriptorType::eUniformBufferDynamic, 100U },
+    //         { vk::DescriptorType::eUniformTexelBuffer, 100U },
+    //     };
 
-        auto descPoolInfo = vk::DescriptorPoolCreateInfo {
-            vk::DescriptorPoolCreateFlags(),
-            10U,
-            static_cast<uint32_t>(sizes.size()), sizes.data()
-        };
+    //     auto descPoolInfo = vk::DescriptorPoolCreateInfo {
+    //         vk::DescriptorPoolCreateFlags(),
+    //         10U,
+    //         static_cast<uint32_t>(sizes.size()), sizes.data()
+    //     };
 
-        __pDescriptorPool = __device.createDescriptorPoolUnique( descPoolInfo );
-    }
+    //     __pDescriptorPool = __device.createDescriptorPoolUnique( descPoolInfo );
+    // }
 
     createTexture();
-    createDescriptorSet();
+    createDescriptorSetLayout();
     createPipeline();
 }
 
@@ -74,23 +74,23 @@ Materials::~Materials()
     std::cout << "Call Material Desctructor\n";
 }
 
-Pipeline* Materials::getPipeline( const std::string& name )
-{
-    auto result = __pipelines.find( name );
-    if( result == __pipelines.end() )
-        return nullptr;
+// Pipeline* Materials::getPipeline( const std::string& name )
+// {
+//     auto result = __pipelines.find( name );
+//     if( result == __pipelines.end() )
+//         return nullptr;
 
-    return &result->second;
-}
+//     return &result->second;
+// }
 
-Descriptor* Materials::getDescriptor( const std::string& name )
-{
-    auto result = __descriptors.find( name );
-    if( result == __descriptors.end() )
-        return nullptr;
+// Descriptor* Materials::getDescriptor( const std::string& name )
+// {
+//     auto result = __descriptors.find( name );
+//     if( result == __descriptors.end() )
+//         return nullptr;
 
-    return &result->second;
-}
+//     return &result->second;
+// }
 
 // void Materials::destroy() 
 // {
@@ -238,15 +238,58 @@ Material* Materials::pMaterial(const std::string& name)
     return &(success->second);
 }
 
+vk::DescriptorSetLayout* Materials::pSetLayout(const std::string& name) 
+{
+    auto success = __loadedSetLayouts.find( name );
+    if( success == __loadedSetLayouts.end() )
+        return nullptr;
+
+    return &(success->second);
+}
+
 
 void Materials::createTexture() 
 {
     
 }
 
-void Materials::createDescriptorSet() 
+void Materials::createDescriptorSetLayout() 
 {
-    
+    /// Descriptor Set Layout for Model View Projection (uniform buffer type)
+    {
+        // This binding is for CameraData binding
+        vk::DescriptorSetLayoutBinding cameraBinding {};
+        cameraBinding.setBinding( 0 );
+        cameraBinding.setDescriptorCount( 1 );
+        cameraBinding.setDescriptorType( vk::DescriptorType::eUniformBuffer );
+        cameraBinding.setStageFlags( vk::ShaderStageFlagBits::eVertex );
+
+        vk::DescriptorSetLayoutBinding sceneBinding {};
+        sceneBinding.setBinding( 1 );
+        sceneBinding.setDescriptorCount( 1 );
+        sceneBinding.setDescriptorType( vk::DescriptorType::eUniformBuffer );
+        sceneBinding.setStageFlags( vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex );
+
+        auto bindings = { cameraBinding, sceneBinding };
+
+        vk::DescriptorSetLayoutCreateInfo setLayoutInfo {};
+        setLayoutInfo.setBindings( bindings );
+        
+        vk::DescriptorSetLayout setLayout = __device.createDescriptorSetLayout( setLayoutInfo );
+        __loadedSetLayouts["ubo"] = setLayout;
+    }
+
+    /// Another Descriptor set layout creation
+    {
+
+    }
+
+    __delQueue.pushFunction( [&](){
+        for( auto& l : __loadedSetLayouts )
+        {
+            __device.destroyDescriptorSetLayout( l.second );
+        }
+    } );
 }
 
 void Materials::createPipeline() 
@@ -263,6 +306,7 @@ void Materials::createPipeline()
         {
             auto layoutMaker = vku::PipelineLayoutMaker{};
             layoutMaker.pushConstantRange( vk::ShaderStageFlagBits::eVertex, 0, sizeof( PushConstants ) );
+            layoutMaker.descriptorSetLayout( *pSetLayout("ubo") );
 
             pipelineLayout = layoutMaker.createUnique( __device ).release();
             __delQueue.pushFunction([d=__device, pl=pipelineLayout](){
@@ -317,63 +361,63 @@ void Materials::createPipeline()
 
 }
 
-bool Materials::loadTexture(std::string filename, std::string textureName, ImageUsedFor usedFor) 
-{
-    /// Loading the texture (FIX)
-    bool isSuccess = false;
-    if( usedFor == ImageUsedFor::TEXTURE_2D ) {
-        vku::TextureImage2D texture;
-        bool isSuccess = loadImageFromFile( __assetsPath + filename, &texture, usedFor );
-        loadedTexture2D[textureName] = std::move(texture);
-        isSuccess = true;
-    }
-    else if( usedFor == ImageUsedFor::TEXTURE_CUBE ) {
-        vku::TextureImageCube texture;
-        bool success = loadImageFromFile( __assetsPath + filename, &texture, usedFor );
-        loadedTextureCube[textureName] = std::move( texture );
-        isSuccess = true;
-    }
-    else {}
+// bool Materials::loadTexture(std::string filename, std::string textureName, ImageUsedFor usedFor) 
+// {
+//     /// Loading the texture (FIX)
+//     bool isSuccess = false;
+//     if( usedFor == ImageUsedFor::TEXTURE_2D ) {
+//         vku::TextureImage2D texture;
+//         bool isSuccess = loadImageFromFile( __assetsPath + filename, &texture, usedFor );
+//         loadedTexture2D[textureName] = std::move(texture);
+//         isSuccess = true;
+//     }
+//     else if( usedFor == ImageUsedFor::TEXTURE_CUBE ) {
+//         vku::TextureImageCube texture;
+//         bool success = loadImageFromFile( __assetsPath + filename, &texture, usedFor );
+//         loadedTextureCube[textureName] = std::move( texture );
+//         isSuccess = true;
+//     }
+//     else {}
 
-    return isSuccess;
-}
+//     return isSuccess;
+// }
 
-bool Materials::loadImageFromFile( const std::string& filename, vku::GenericImage* image, ImageUsedFor usedFor ) 
-{
-    // assert( _isInitialized_ );
+// bool Materials::loadImageFromFile( const std::string& filename, vku::GenericImage* image, ImageUsedFor usedFor ) 
+// {
+//     // assert( _isInitialized_ );
 
-    int texWidth, texHeight, texChannel;
-    auto desiredChannel = STBI_rgb_alpha;
+//     int texWidth, texHeight, texChannel;
+//     auto desiredChannel = STBI_rgb_alpha;
 
-    stbi_uc* pixels = stbi_load( filename.c_str(), &texWidth, &texHeight, &texChannel, desiredChannel );
+//     stbi_uc* pixels = stbi_load( filename.c_str(), &texWidth, &texHeight, &texChannel, desiredChannel );
 
-    if( !pixels )
-        return false;
+//     if( !pixels )
+//         return false;
 
-    vk::DeviceSize imageSize = texWidth * texHeight * static_cast<int>(desiredChannel);
-    vk::Format textureFormat = vk::Format::eR8G8B8A8Srgb;
+//     vk::DeviceSize imageSize = texWidth * texHeight * static_cast<int>(desiredChannel);
+//     vk::Format textureFormat = vk::Format::eR8G8B8A8Srgb;
 
-    std::vector<uint8_t> bytes { pixels, pixels + static_cast<int>(imageSize) - 1 };
+//     std::vector<uint8_t> bytes { pixels, pixels + static_cast<int>(imageSize) - 1 };
 
-    switch (usedFor)
-    {
-    case ImageUsedFor::TEXTURE_2D :
-        *image = vku::TextureImage2D { __device, __physicalDevice.getMemoryProperties(), 
-                                        static_cast<uint32_t>(texWidth),
-                                        static_cast<uint32_t>(texHeight), 
-                                        1U, textureFormat };
-        break;
-    case ImageUsedFor::TEXTURE_CUBE :
-        *image = vku::TextureImageCube { __device, __physicalDevice.getMemoryProperties(), 
-                                            static_cast<uint32_t>(texWidth),
-                                            static_cast<uint32_t>(texHeight), 
-                                            1U, textureFormat };
-        break;
-    default:
-        break;
-    }
+//     switch (usedFor)
+//     {
+//     case ImageUsedFor::TEXTURE_2D :
+//         *image = vku::TextureImage2D { __device, __physicalDevice.getMemoryProperties(), 
+//                                         static_cast<uint32_t>(texWidth),
+//                                         static_cast<uint32_t>(texHeight), 
+//                                         1U, textureFormat };
+//         break;
+//     case ImageUsedFor::TEXTURE_CUBE :
+//         *image = vku::TextureImageCube { __device, __physicalDevice.getMemoryProperties(), 
+//                                             static_cast<uint32_t>(texWidth),
+//                                             static_cast<uint32_t>(texHeight), 
+//                                             1U, textureFormat };
+//         break;
+//     default:
+//         break;
+//     }
 
-    image->upload( __device, bytes, __pCommandPool.get(), __physicalDevice.getMemoryProperties(), __transferQueue );
+//     image->upload( __device, bytes, __pCommandPool.get(), __physicalDevice.getMemoryProperties(), __transferQueue );
 
-    return true;
-}
+//     return true;
+// }

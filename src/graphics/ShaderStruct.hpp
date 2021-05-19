@@ -13,6 +13,26 @@ struct VertexInputDescription
     vk::PipelineVertexInputStateCreateFlags flags = vk::PipelineVertexInputStateCreateFlags();
 };
 
+namespace bo
+{
+// it's used for UBO
+struct CameraData
+{
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewProj;
+};
+
+struct SceneData
+{
+    glm::vec4 fogColor; // w is for exponent
+    glm::vec4 fogDistances; // x for min, y for max, zw unused
+    glm::vec4 ambientColor;
+    glm::vec4 sunlightDirection; // w is for sun power
+    glm::vec4 sunlightColor;
+};
+}
+
 
 // Using std430 rule: All the data must be float of vec4. Note that mat4 is 4 * vec4, so it's okay to use.
 struct MeshPushConstants

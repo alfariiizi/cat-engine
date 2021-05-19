@@ -1,11 +1,21 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+
+#include "VulkanBase.hpp"   // for the sake of MAX_FRAME !
 #include "DeletionQueue.hpp"
 #include "Material.hpp"
 #include "Mesh.hpp"
 
 #include "ShaderStruct.hpp"
+
+struct DescriptorSet
+{
+    vk::DescriptorSet _set;
+    // std::vector<vk::DescriptorSet> _sets;
+    // Buffer _buffer;
+    std::vector<Buffer> _buffers;
+};
 
 /**
  * Idk, but maybe it'll use other class such as Material, Buffer, Image, Descriptor, Mesh, etc. (each 'll be an array)
@@ -51,7 +61,12 @@ public:
 
 private:
     void giveCommand( vk::CommandBuffer& cmd, uint32_t& imageIndex, uint32_t& frameNumber, vk::RenderPassBeginInfo& rpBeginInfo );
+    void createMesh();
     void loadObject();
+    void createDescriptorSet();
+
+private:
+    size_t padUniformBufferSize( size_t originalSize );
 
 private:
     const vk::ClearColorValue clearColorValue = vk::ClearColorValue{ std::array<float, 4U>{0.1f, 0.2f, 0.2f, 1.0f} };
@@ -69,6 +84,13 @@ private:
 private:
     std::string __assetsPath;
     vk::CommandPool __cmdPool; // Command Pool for one time submit cmdbuffer
+
+private:
+    vk::DescriptorPool __setPool;
+    // std::unordered_map<std::string, vk::DescriptorSetLayout> __setLayouts;   // Move to material
+    std::unordered_multimap<std::string, vk::DescriptorSet> __sets;
+    // std::array<DescriptorSet, MAX_FRAME> __ubos;   // UBO for each frame
+    DescriptorSet __ubos;   // CameraData and SceneData are also in here !
 
     /* Depend */
 private:

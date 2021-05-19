@@ -8,7 +8,7 @@
 #include "DeletionQueue.hpp"
 #include "vma/vk_mem_alloc.hpp"
 
-#define MAX_FRAME 2
+#define MAX_FRAME 3
 
 class Queue
 {

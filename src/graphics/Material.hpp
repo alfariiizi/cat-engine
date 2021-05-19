@@ -72,6 +72,7 @@ public:
     // void loadTexture();
     void basicTexturedPipeline();
     Material* pMaterial( const std::string& name );
+    vk::DescriptorSetLayout* pSetLayout( const std::string& name );
 
 public:
     Pipeline* getPipeline( const std::string& name );
@@ -79,7 +80,7 @@ public:
 
 private:
     void createTexture();
-    void createDescriptorSet();
+    void createDescriptorSetLayout();
     void createPipeline();
 
 private:
@@ -87,16 +88,18 @@ private:
     bool loadImageFromFile( const std::string& filename, vku::GenericImage* image, ImageUsedFor usedFor );
 
 private:
-    std::unordered_map<std::string, vku::TextureImage2D> loadedTexture2D;
-    std::unordered_map<std::string, vku::TextureImageCube> loadedTextureCube;
+    // std::unordered_map<std::string, vku::TextureImage2D> loadedTexture2D;
+    // std::unordered_map<std::string, vku::TextureImageCube> loadedTextureCube;
 
 private:
-    vk::UniqueDescriptorPool __pDescriptorPool;
-    vk::UniqueCommandPool __pCommandPool;
+    // vk::UniqueDescriptorPool __pDescriptorPool;
+    // vk::UniqueCommandPool __pCommandPool;
 
 private:
-    std::unordered_map<std::string, Pipeline> __pipelines;
-    std::unordered_map<std::string, Descriptor> __descriptors;
+    // std::unordered_map<std::string, Pipeline> __pipelines;
+    // std::unordered_map<std::string, Descriptor> __descriptors;
+private:
+    std::unordered_map<std::string, vk::DescriptorSetLayout> __loadedSetLayouts;
 
 private:
     std::unordered_map<std::string, Material> __loadedMaterials;
